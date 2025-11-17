@@ -3,9 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VehicleDiagram } from "@/components/VehicleDiagram";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { Navigation, MapPin, Compass, Settings, Sun, Shield, Clock, Route, X, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { HeadingDetector } from "@/lib/headingDetector";
+import Lottie from "lottie-react";
 
 interface SeatRecommendation {
   side: 'left' | 'right';
@@ -18,9 +20,27 @@ interface SeatRecommendation {
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const [safeSeatLoading, setSafeSeatLoading] = useState(false);
+  const [routeModeLoading, setRouteModeLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [routeRecommendation, setRouteRecommendation] = useState<any>(null);
+  const [animationData, setAnimationData] = useState<any>(null);
+
+  // Load Lottie animation data
+  useEffect(() => {
+    const loadAnimation = async () => {
+      try {
+        const response = await fetch('/animations/little sun.json');
+        const data = await response.json();
+        setAnimationData(data);
+      } catch (error) {
+        console.warn('Could not load Lottie animation, using fallback UI');
+      }
+    };
+
+    loadAnimation();
+  }, []);
 
   // Handle route recommendation when coming from RouteMode
   useEffect(() => {
@@ -35,12 +55,12 @@ const Index = () => {
   }, [location.state]);
 
   const handleCheckSafeSide = async () => {
-    setIsLoading(true);
+    setSafeSeatLoading(true);
 
     try {
       if (!navigator.geolocation) {
         toast.error("Geolocation is not supported by your device");
-        setIsLoading(false);
+        setSafeSeatLoading(false);
         return;
       }
 
@@ -111,9 +131,43 @@ const Index = () => {
         toast.error("Could not get your location. Please try again.");
       }
       
-      setIsLoading(false);
+      setSafeSeatLoading(false);
     }
   };
+
+  const handleRouteMode = async () => {
+    setRouteModeLoading(true);
+    
+    try {
+      // Simulate some loading time for better UX
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Navigate to route page
+      navigate('/route');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Could not load route mode");
+    } finally {
+      setRouteModeLoading(false);
+    }
+  };
+
+const handleSettings = async () => {
+  setSettingsLoading(true);
+  
+  try {
+    // Simulate loading time (optional)
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Your actual logic here
+    navigate('/settings');
+  } catch (error) {
+    console.error('Error:', error);
+    toast.error("Could not load settings");
+  } finally {
+    setSettingsLoading(false);
+  }
+};
 
   const clearRouteRecommendation = () => {
     setRouteRecommendation(null);
@@ -186,7 +240,10 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 py-8 px-4 relative">
+      {/* Reusable Loading Overlay - shows for either button */}
+      <LoadingOverlay isLoading={safeSeatLoading || routeModeLoading || settingsLoading} animationData={animationData} />
+
       <div className="max-w-md mx-auto">
         {/* Enhanced Header with Better Visual Hierarchy */}
         <div className="text-center mb-8 animate-fade-in-up">
@@ -332,7 +389,7 @@ const Index = () => {
             {/* Enhanced Primary CTA Button */}
             <Button 
               onClick={handleCheckSafeSide}
-              disabled={isLoading}
+              disabled={safeSeatLoading}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
               className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
@@ -343,21 +400,14 @@ const Index = () => {
                 isHovered ? 'scale-105' : 'scale-100'
               }`}></div>
               
-              {/* Loading State */}
-              {isLoading ? (
-                <div className="relative z-10 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                  <span>Detecting Your Position...</span>
+              {/* Button Content */}
+              <div className="relative z-10 flex items-center justify-center">
+                <Shield className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
+                <span>Find My Safe Seat</span>
+                <div className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
+                  <Compass className="w-5 h-5 animate-pulse" />
                 </div>
-              ) : (
-                <div className="relative z-10 flex items-center justify-center">
-                  <Shield className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
-                  <span>Find My Safe Seat</span>
-                  <div className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
-                    <Compass className="w-5 h-5 animate-pulse" />
-                  </div>
-                </div>
-              )}
+              </div>
             </Button>
 
             {/* Enhanced Feature List */}
@@ -399,7 +449,7 @@ const Index = () => {
         <div className="grid grid-cols-2 gap-4 animate-fade-in-up">
           <Card 
             className="p-5 cursor-pointer group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl overflow-hidden relative"
-            onClick={() => navigate('/route')}
+            onClick={handleRouteMode}
           >
             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
             <div className="relative z-10">
