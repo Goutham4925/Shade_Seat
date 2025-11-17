@@ -15,18 +15,41 @@
     <meta property="og:title" content="SunSafe Seat Advisor - Find Your Safe Seat" />
     <meta property="og:description" content="Avoid direct sunlight on your commute. Get real-time seat recommendations based on sun position and travel direction." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/public/sun-logo.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="SunSafe Seat Advisor" />
     <meta name="twitter:description" content="Find the best seat to avoid direct sunlight" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:image" content="/public/sun-logo.png" />
     
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/public/manifest.json" />
+    
+    <!-- PNG Favicon Links - reference from public folder -->
+    <link rel="icon" type="image/png" href="/public/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.png">
+    <link rel="apple-touch-icon" href="/public/favicon.png">
+    
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    
+    <!-- Preconnect to Google Fonts for better performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Force favicon refresh script -->
+    <script>
+      setTimeout(() => {
+        const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+        link.type = 'image/png';
+        link.rel = 'icon';
+        link.href = '/public/favicon.png?' + new Date().getTime();
+        document.head.appendChild(link);
+      }, 1000);
+    </script>
   </body>
 </html>

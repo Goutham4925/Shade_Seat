@@ -1,73 +1,120 @@
-# Welcome to your Lovable project
+SunSafe Seat Advisor 🌞
+A smart web application that helps commuters find the best seats to avoid direct sunlight based on real-time sun position and travel direction.
 
-## Project info
+Features
+Real-time Sun Tracking: Uses current time and location to determine sun position
 
-**URL**: https://lovable.dev/projects/f5a93576-f7f5-4bcd-9968-73fba7753c4a
+Smart Seat Recommendations: Suggests optimal seats to avoid direct sunlight
 
-## How can I edit this code?
+Responsive Design: Works seamlessly on desktop and mobile devices
 
-There are several ways of editing your application.
+PWA Support: Installable as a mobile app
 
-**Use Lovable**
+Offline Capable: Works with limited connectivity
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f5a93576-f7f5-4bcd-9968-73fba7753c4a) and start prompting.
+Tech Stack
+Frontend: React 18 + TypeScript
 
-Changes made via Lovable will be committed automatically to this repo.
+Build Tool: Vite
 
-**Use your preferred IDE**
+Styling: Tailwind CSS
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Icons: Material Design Icons
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Routing: React Router DOM
 
-Follow these steps:
+Development: ESLint + TypeScript
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Project Structure
+text
+sun-safe/
+├── public/                 # Static assets
+│   ├── favicon.png        # App icon
+│   └── animations/        # Lottie animations
+├── src/                   # Source code
+│   ├── components/        # React components
+│   ├── hooks/             # Custom React hooks
+│   ├── utils/             # Utility functions
+│   └── main.tsx          # Application entry point
+├── index.html            # HTML template
+└── configuration files   # Build and config files
+Getting Started
+Prerequisites
+Node.js 18+
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+npm or yarn
 
-# Step 3: Install the necessary dependencies.
-npm i
+Installation
+Clone the repository
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+bash
+git clone <repository-url>
+cd sun-safe
+Install dependencies
+
+bash
+npm install
+Start development server
+
+bash
 npm run dev
-```
+Open your browser
+Navigate to http://localhost:5173
 
-**Edit a file directly in GitHub**
+Available Scripts
+npm run dev - Start development server
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+npm run build - Build for production
 
-**Use GitHub Codespaces**
+npm run preview - Preview production build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+npm run lint - Run ESLint
 
-## What technologies are used for this project?
+Building for Production
+bash
+npm run build
+The built files will be in the dist folder, ready for deployment.
 
-This project is built with:
+Environment Setup
+The project uses Vite as the build tool. Key configuration files:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+vite.config.ts - Vite configuration
 
-## How can I deploy this project?
+tailwind.config.ts - Tailwind CSS configuration
 
-Simply open [Lovable](https://lovable.dev/projects/f5a93576-f7f5-4bcd-9968-73fba7753c4a) and click on Share -> Publish.
+tsconfig.json - TypeScript configuration
 
-## Can I connect a custom domain to my Lovable project?
+components.json - UI components configuration
 
-Yes, you can!
+Browser Support
+Chrome/Edge 88+
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Firefox 85+
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Safari 14+
+
+Contributing
+Fork the repository
+
+Create a feature branch (git checkout -b feature/amazing-feature)
+
+Commit your changes (git commit -m 'Add amazing feature')
+
+Push to the branch (git push origin feature/amazing-feature)
+
+Open a Pull Request
+
+License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+Acknowledgments
+Sun position calculations based on astronomical algorithms
+
+UI components built with modern web standards
+
+Icons provided by Material Design
+
+Support
+For support and questions, please open an issue in the repository or contact the development team.
+
+SunSafe - Making your commute more comfortable, one seat at a time! 🚆✨

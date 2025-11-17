@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Navigation, MapPin, Loader2, Route, Target, Clock, Shield } from "lucide-react";
+import { ArrowLeft, Navigation, MapPin, Loader2, Route, Target, Clock, Shield, Compass, Sun } from "lucide-react";
 import { toast } from "sonner";
 
 interface LocationSuggestion {
@@ -288,27 +288,22 @@ const RouteMode = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50/30 py-8 px-4 relative">
       <div className="max-w-md mx-auto">
         {/* Enhanced Header */}
         <div className="text-center mb-8 animate-fade-in-up">
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="mb-6 -ml-4 hover:bg-white/50 backdrop-blur-sm transition-all rounded-2xl"
+            className="mb-6 -ml-4 hover:bg-gray-100 hover:text-black 
+                      rounded-2xl transition-all group"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
             Back to Home
           </Button>
+
           
-          <div className="relative inline-flex items-center justify-center mb-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-3xl blur-lg opacity-30 animate-pulse-slow"></div>
-            <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-cyan-500 shadow-lg">
-              <Route className="w-10 h-10 text-white" />
-            </div>
-          </div>
-          
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-3">
             Route Mode
           </h1>
           <p className="text-lg text-gray-600 mb-1">
@@ -320,7 +315,7 @@ const RouteMode = () => {
         </div>
 
         {/* Enhanced Form Card */}
-        <Card className="relative overflow-hidden shadow-2xl border-0 bg-white/80 backdrop-blur-sm rounded-3xl p-8 mb-8 animate-slide-up">
+        <Card className="relative overflow-hidden shadow-2xl border-0 bg-white rounded-3xl p-8 mb-8 animate-slide-up">
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-cyan-100 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-100 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
@@ -328,9 +323,11 @@ const RouteMode = () => {
           <div className="relative z-10">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Origin Input */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label htmlFor="origin" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Target className="w-4 h-4" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600">
+                    <Target className="w-4 h-4" />
+                  </div>
                   Starting Point
                 </Label>
                 <div className="relative" ref={originDropdownRef}>
@@ -344,7 +341,7 @@ const RouteMode = () => {
                     value={origin}
                     onChange={(e) => handleOriginChange(e.target.value)}
                     onFocus={() => origin.length >= 3 && originSuggestions.length > 0 && setShowOriginDropdown(true)}
-                    className="pl-12 pr-12 h-14 rounded-2xl border-2 border-gray-200/80 bg-white/50 backdrop-blur-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all shadow-inner"
+                    className="pl-12 pr-12 h-14 rounded-2xl border-2 border-gray-200 bg-white focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all shadow-inner"
                     autoComplete="off"
                   />
                   {isSearching && (
@@ -353,7 +350,7 @@ const RouteMode = () => {
                     </div>
                   )}
                   {showOriginDropdown && originSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
                       {originSuggestions.map((suggestion) => (
                         <button
                           key={suggestion.place_id}
@@ -373,17 +370,24 @@ const RouteMode = () => {
                   variant="ghost"
                   size="sm"
                   onClick={handleUseCurrentLocation}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all group"
                   disabled={isLoading}
                 >
-                  📍 Use Current Location
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      📍
+                    </div>
+                    <span>Use Current Location</span>
+                  </div>
                 </Button>
               </div>
 
               {/* Destination Input */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label htmlFor="destination" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Navigation className="w-4 h-4" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-600">
+                    <Navigation className="w-4 h-4" />
+                  </div>
                   Destination
                 </Label>
                 <div className="relative" ref={destDropdownRef}>
@@ -397,25 +401,25 @@ const RouteMode = () => {
                     value={destination}
                     onChange={(e) => handleDestChange(e.target.value)}
                     onFocus={() => destination.length >= 3 && destSuggestions.length > 0 && setShowDestDropdown(true)}
-                    className="pl-12 pr-12 h-14 rounded-2xl border-2 border-gray-200/80 bg-white/50 backdrop-blur-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all shadow-inner"
+                    className="pl-12 pr-12 h-14 rounded-2xl border-2 border-gray-200 bg-white focus:border-green-400 focus:ring-2 focus:ring-green-200 transition-all shadow-inner"
                     autoComplete="off"
                   />
                   {isSearching && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
                     </div>
                   )}
                   {showDestDropdown && destSuggestions.length > 0 && (
-                    <div className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
                       {destSuggestions.map((suggestion) => (
                         <button
                           key={suggestion.place_id}
                           type="button"
                           onClick={() => selectDestSuggestion(suggestion)}
-                          className="w-full px-4 py-4 text-left text-sm hover:bg-blue-50 hover:text-blue-700 transition-all flex items-start gap-3 border-b border-gray-100 last:border-0 group"
+                          className="w-full px-4 py-4 text-left text-sm hover:bg-green-50 hover:text-green-700 transition-all flex items-start gap-3 border-b border-gray-100 last:border-0 group"
                         >
-                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                          <span className="break-words text-gray-700 group-hover:text-blue-700">{suggestion.display_name}</span>
+                          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400 group-hover:text-green-500 transition-colors" />
+                          <span className="break-words text-gray-700 group-hover:text-green-700">{suggestion.display_name}</span>
                         </button>
                       ))}
                     </div>
@@ -429,24 +433,24 @@ const RouteMode = () => {
                 disabled={isLoading || !origin || !destination}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group mt-6"
+                className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group mt-6 border-0"
               >
                 {/* Animated Background */}
                 <div className={`absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500 ${
-                  isHovered ? 'scale-105' : 'scale-100'
+                  isHovered ? 'scale-105 brightness-110' : 'scale-100'
                 } ${isLoading || !origin || !destination ? 'opacity-50' : ''}`}></div>
                 
                 {isLoading ? (
                   <div className="relative z-10 flex items-center justify-center">
                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-                    <span>Calculating Optimal Route...</span>
+                    <span className="text-white font-medium">Calculating Optimal Route...</span>
                   </div>
                 ) : (
                   <div className="relative z-10 flex items-center justify-center">
-                    <Shield className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
-                    <span>Get Route Recommendation</span>
-                    <div className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
-                      <Route className="w-5 h-5 animate-pulse" />
+                    <Shield className="w-5 h-5 mr-3 text-white transition-transform group-hover:scale-110" />
+                    <span className="text-white font-bold">Get Route Recommendation</span>
+                    <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <Route className="w-5 h-5 text-white animate-pulse" />
                     </div>
                   </div>
                 )}
@@ -456,16 +460,18 @@ const RouteMode = () => {
         </Card>
 
         {/* Enhanced Info Card */}
-        <Card className="relative overflow-hidden shadow-2xl border-0 bg-gradient-to-br from-gray-50 to-white/80 backdrop-blur-sm rounded-3xl p-6 mb-6 animate-fade-in-up">
+        <Card className="relative overflow-hidden shadow-2xl border-0 bg-white rounded-3xl p-6 mb-6 animate-fade-in-up">
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-l from-amber-100 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
           <div className="relative z-10">
-            <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-600" />
-              How It Works
+            <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 text-amber-600">
+                <Clock className="w-5 h-5" />
+              </div>
+              <span>How It Works</span>
             </h3>
             <div className="space-y-4">
-              <div className="flex gap-4 p-3 bg-white/50 rounded-xl border border-gray-100 transition-all hover:bg-white hover:shadow-md">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600 font-bold text-sm flex-shrink-0">
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 transition-all hover:bg-blue-100 group">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600 font-bold text-lg group-hover:scale-110 transition-transform">
                   1
                 </div>
                 <div>
@@ -474,8 +480,8 @@ const RouteMode = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 p-3 bg-white/50 rounded-xl border border-gray-100 transition-all hover:bg-white hover:shadow-md">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-600 font-bold text-sm flex-shrink-0">
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 transition-all hover:bg-green-100 group">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 text-green-600 font-bold text-lg group-hover:scale-110 transition-transform">
                   2
                 </div>
                 <div>
@@ -484,8 +490,8 @@ const RouteMode = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 p-3 bg-white/50 rounded-xl border border-gray-100 transition-all hover:bg-white hover:shadow-md">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-100 text-amber-600 font-bold text-sm flex-shrink-0">
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-100 transition-all hover:bg-amber-100 group">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 text-amber-600 font-bold text-lg group-hover:scale-110 transition-transform">
                   3
                 </div>
                 <div>
@@ -499,15 +505,26 @@ const RouteMode = () => {
 
         {/* Enhanced Note Section */}
         <div className="text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50/80 backdrop-blur-sm rounded-2xl shadow-lg border border-amber-200/50 max-w-sm">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 text-amber-600">
+          <div className="inline-flex items-start gap-4 px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl shadow-lg border border-amber-200 max-w-sm">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex-shrink-0">
               💡
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold text-amber-900">Pro Tip</p>
-              <p className="text-xs text-amber-700">
-                For real-time recommendations, use the quick check mode with live location
+              <p className="text-sm font-semibold text-amber-900 mb-1">Pro Tip</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                For real-time recommendations, use the quick check mode with live location and compass
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Status Footer */}
+        <div className="mt-8 text-center animate-fade-in-up">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-2xl shadow border border-gray-100">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Ready to Calculate</p>
+              <p className="text-xs text-gray-600">Enter your route to get started</p>
             </div>
           </div>
         </div>

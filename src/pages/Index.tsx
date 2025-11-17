@@ -4,18 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VehicleDiagram } from "@/components/VehicleDiagram";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { Navigation, MapPin, Compass, Settings, Sun, Shield, Clock, Route, X, Lightbulb } from "lucide-react";
+import { Navigation, MapPin, Compass, Settings, Shield, Clock, Route, X, Lightbulb, Car } from "lucide-react";
 import { toast } from "sonner";
 import { HeadingDetector } from "@/lib/headingDetector";
 import Lottie from "lottie-react";
-
-interface SeatRecommendation {
-  side: 'left' | 'right';
-  reason: string;
-  bearing: number;
-  sunPosition: string;
-  [key: string]: any;
-}
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,7 +27,7 @@ const Index = () => {
         const data = await response.json();
         setAnimationData(data);
       } catch (error) {
-        console.warn('Could not load Lottie animation, using fallback UI');
+        console.warn('Could not load Lottie animation');
       }
     };
 
@@ -45,11 +37,8 @@ const Index = () => {
   // Handle route recommendation when coming from RouteMode
   useEffect(() => {
     if (location.state?.recommendation) {
-      console.log('Received route recommendation data:', location.state);
       setRouteRecommendation(location.state);
       toast.success("Route analysis complete!");
-      
-      // Clear the navigation state to prevent showing again on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -139,10 +128,7 @@ const Index = () => {
     setRouteModeLoading(true);
     
     try {
-      // Simulate some loading time for better UX
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Navigate to route page
       navigate('/route');
     } catch (error) {
       console.error('Error:', error);
@@ -152,41 +138,22 @@ const Index = () => {
     }
   };
 
-const handleSettings = async () => {
-  setSettingsLoading(true);
-  
-  try {
-    // Simulate loading time (optional)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+  const handleSettings = async () => {
+    setSettingsLoading(true);
     
-    // Your actual logic here
-    navigate('/settings');
-  } catch (error) {
-    console.error('Error:', error);
-    toast.error("Could not load settings");
-  } finally {
-    setSettingsLoading(false);
-  }
-};
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      navigate('/settings');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error("Could not load settings");
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const clearRouteRecommendation = () => {
     setRouteRecommendation(null);
-  };
-
-  const getRecommendationDisplay = () => {
-    if (!routeRecommendation?.recommendation) return null;
-    
-    const rec = routeRecommendation.recommendation;
-    
-    if (typeof rec === 'string') {
-      return rec;
-    } else if (rec.side) {
-      return rec.side === 'left' ? '🫲 Left Side' : '🫱 Right Side';
-    } else if (rec.recommendedSeat) {
-      return rec.recommendedSeat === 'left' ? '🫲 Left Side' : '🫱 Right Side';
-    }
-    
-    return 'Unknown recommendation';
   };
 
   const getRecommendationSide = (): 'left' | 'right' | null => {
@@ -194,294 +161,273 @@ const handleSettings = async () => {
     
     const rec = routeRecommendation.recommendation;
     
-    console.log('Raw recommendation in Index:', rec);
-    console.log('Type of recommendation:', typeof rec);
-    
     try {
-      // Handle string recommendation
       if (typeof rec === 'string') {
         const side = rec.toLowerCase().trim();
         return side.includes('left') ? 'left' : 'right';
       }
       
-      // Handle object recommendation
       if (rec && typeof rec === 'object') {
-        // Check for side property
         if (rec.side && typeof rec.side === 'string') {
           const side = rec.side.toLowerCase().trim();
           return side.includes('left') ? 'left' : 'right';
         }
         
-        // Check for recommendedSide property  
         if (rec.recommendedSide && typeof rec.recommendedSide === 'string') {
           const side = rec.recommendedSide.toLowerCase().trim();
           return side.includes('left') ? 'left' : 'right';
         }
         
-        // Check for recommendedSeat property
         if (rec.recommendedSeat && typeof rec.recommendedSeat === 'string') {
           const side = rec.recommendedSeat.toLowerCase().trim();
           return side.includes('left') ? 'left' : 'right';
         }
       }
       
-      // Fallback based on bearing if available
       if (routeRecommendation.bearing !== undefined && typeof routeRecommendation.bearing === 'number') {
         return routeRecommendation.bearing >= 0 && routeRecommendation.bearing < 180 ? 'left' : 'right';
       }
       
-      console.warn('Could not determine recommendation side, using fallback');
-      return 'right'; // Final fallback
+      return 'right';
       
     } catch (error) {
       console.error('Error determining recommendation side:', error);
-      return 'right'; // Error fallback
+      return 'right';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50 py-8 px-4 relative">
-      {/* Reusable Loading Overlay - shows for either button */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50/30 py-6 px-4 relative">
       <LoadingOverlay isLoading={safeSeatLoading || routeModeLoading || settingsLoading} animationData={animationData} />
 
       <div className="max-w-md mx-auto">
-        {/* Enhanced Header with Better Visual Hierarchy */}
+        {/* Premium Header */}
         <div className="text-center mb-8 animate-fade-in-up">
-          <div className="relative inline-flex items-center justify-center mb-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-3xl blur-lg opacity-30 animate-pulse-slow"></div>
-            <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg">
-              <Sun className="w-10 h-10 text-white" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
             SunSafe
           </h1>
-          <p className="text-lg text-gray-600 mb-1">
-            Smart Seat Advisor
+          <p className="text-lg text-gray-700 mb-2 font-medium">
+            Smart Seat Selection
           </p>
-          <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
-            Find the perfect seat to stay cool and comfortable in direct sunlight
+          <p className="text-sm text-gray-600 max-w-xs mx-auto leading-relaxed">
+            Choose the perfect seat to avoid direct sunlight
           </p>
         </div>
 
-        {/* Enhanced Route Recommendation Display */}
-        {routeRecommendation && (
-          <Card className="relative overflow-hidden shadow-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/80 backdrop-blur-sm rounded-3xl p-6 mb-6 animate-fade-in-up">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-l from-green-100 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearRouteRecommendation}
-              className="absolute top-3 right-3 z-10 w-8 h-8 p-0 rounded-full bg-white/80 hover:bg-white shadow-sm"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-            <div className="relative z-10">
-              <h3 className="font-bold text-xl text-green-900 mb-4 flex items-center gap-2">
-                <Route className="w-6 h-6 text-green-600" />
-                Route Recommendation Ready!
-              </h3>
-              
-              <div className="space-y-4">
-                {/* Main Recommendation with Visual Highlight */}
-                <div className={`p-5 rounded-2xl border-2 ${
-                  getRecommendationSide() === 'left' 
-                    ? 'bg-blue-50 border-blue-200' 
-                    : 'bg-amber-50 border-amber-200'
-                } transition-all duration-300`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-semibold text-gray-700 text-lg">Recommended Seat:</span>
-                    <span className={`text-2xl font-bold ${
-                      getRecommendationSide() === 'left' ? 'text-blue-700' : 'text-amber-700'
-                    }`}>
-                      {getRecommendationSide() === 'left' ? '🫲 LEFT SIDE' : '🫱 RIGHT SIDE'}
-                    </span>
-                  </div>
-                  
-                  {/* Visual Seat Indicator */}
-                  <div className="relative bg-white rounded-xl p-4 border border-gray-200 shadow-inner">
-                    <div className="flex justify-between items-center">
-                      <div className={`text-center transition-all duration-300 ${
-                        getRecommendationSide() === 'left' 
-                          ? 'scale-110 text-blue-600 font-bold' 
-                          : 'scale-100 text-gray-400'
-                      }`}>
-                        <div className="text-3xl mb-1">🫲</div>
-                        <div className="text-sm font-medium">Left Side</div>
-                        {getRecommendationSide() === 'left' && (
-                          <div className="text-xs text-green-600 font-bold mt-1">RECOMMENDED</div>
-                        )}
-                      </div>
-                      
-                      <div className="text-gray-400 text-sm">Vehicle</div>
-                      
-                      <div className={`text-center transition-all duration-300 ${
-                        getRecommendationSide() === 'right' 
-                          ? 'scale-110 text-amber-600 font-bold' 
-                          : 'scale-100 text-gray-400'
-                      }`}>
-                        <div className="text-3xl mb-1">🫱</div>
-                        <div className="text-sm font-medium">Right Side</div>
-                        {getRecommendationSide() === 'right' && (
-                          <div className="text-xs text-green-600 font-bold mt-1">RECOMMENDED</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Reason and Details */}
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-white/70 rounded-xl border border-green-200">
-                    <Lightbulb className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-green-900">Why this seat?</p>
-                      <p className="text-sm text-green-700 mt-1">
-                        {routeRecommendation.recommendation.reason || 
-                         `The ${getRecommendationSide()} side provides better shade based on your travel direction of ${routeRecommendation.bearing?.toFixed(1)}°`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-green-700 bg-white/50 p-3 rounded-lg border border-green-200">
-                    <p className="font-medium text-green-900">Route Analysis</p>
-                    <div className="text-xs mt-2 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-green-600">From:</span>
-                        <span className="text-green-800 font-medium">{routeRecommendation.origin || 'Starting point'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-green-600">To:</span>
-                        <span className="text-green-800 font-medium">{routeRecommendation.destination || 'Destination'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-green-600">Direction:</span>
-                        <span className="text-green-800 font-medium">{routeRecommendation.bearing?.toFixed(1)}°</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={clearRouteRecommendation}
-                  variant="outline" 
-                  className="w-full border-green-300 text-green-700 hover:bg-green-100 hover:text-green-800 font-medium"
-                >
-                  Clear Recommendation
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Enhanced Main Card with Better Visual Depth */}
-        <Card className="relative overflow-hidden shadow-2xl border-0 bg-white/80 backdrop-blur-sm rounded-3xl p-8 mb-8 animate-slide-up">
+        {/* Main Vehicle Card with Integrated Recommendation */}
+        <Card className="relative overflow-hidden shadow-2xl border-0 bg-white rounded-3xl p-6 mb-6 animate-slide-up">
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-amber-100 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-100 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
           
           <div className="relative z-10">
-            {/* Vehicle Diagram with Enhanced Container */}
-            <div className="mb-8 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-inner border border-gray-100">
-              <VehicleDiagram className="w-full" />
+            {/* Route Recommendation Badge */}
+            {routeRecommendation && (
+              <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl border-2 border-emerald-200 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Route className="w-5 h-5 text-emerald-600" />
+                    <span className="font-bold text-emerald-900">Route Analysis Complete</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearRouteRecommendation}
+                    className="w-7 h-7 p-0 rounded-full bg-white hover:bg-emerald-50 border border-emerald-200"
+                  >
+                    <X className="w-3 h-3 text-emerald-600" />
+                  </Button>
+                </div>
+                
+                <div className="text-center">
+                  <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-xl ${
+                    getRecommendationSide() === 'left' 
+                      ? 'bg-blue-100 border border-blue-200' 
+                      : 'bg-amber-100 border border-amber-200'
+                  }`}>
+                    <div className="text-2xl">
+                      {getRecommendationSide() === 'left' ? '🫲' : '🫱'}
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-900 text-sm">
+                        RECOMMENDED SEAT
+                      </div>
+                      <div className="text-xs text-gray-700">
+                        {getRecommendationSide() === 'left' ? 'Left Side' : 'Right Side'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Enhanced Vehicle Visualization */}
+            <div className="mb-6 p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-inner border-2 border-gray-100">
+              <div className="relative w-full h-32">
+                {/* Vehicle Body */}
+                <div className="absolute inset-0 bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl border-2 border-gray-300 shadow-lg">
+                  {/* Windows */}
+                  <div className="absolute top-2 left-3 right-3 h-3 bg-blue-200/60 rounded-t-lg border border-blue-300/50"></div>
+                  
+                  {/* Seats with Recommendation Highlight */}
+                  <div className={`absolute top-8 left-4 w-7 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                    getRecommendationSide() === 'left' 
+                      ? 'bg-blue-500 text-white shadow-md scale-110' 
+                      : 'bg-gray-300 text-gray-700'
+                  }`}>
+                    <span className="text-xs font-bold">L</span>
+                  </div>
+                  <div className={`absolute top-8 right-4 w-7 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                    getRecommendationSide() === 'right' 
+                      ? 'bg-amber-500 text-white shadow-md scale-110' 
+                      : 'bg-gray-300 text-gray-700'
+                  }`}>
+                    <span className="text-xs font-bold">R</span>
+                  </div>
+                  
+                  {/* Back Seats */}
+                  <div className="absolute top-16 left-6 w-5 h-6 bg-gray-400 rounded-md"></div>
+                  <div className="absolute top-16 right-6 w-5 h-6 bg-gray-400 rounded-md"></div>
+                  
+                  {/* Wheels */}
+                  <div className="absolute bottom-1 left-2 w-5 h-2 bg-gray-600 rounded-full"></div>
+                  <div className="absolute bottom-1 right-2 w-5 h-2 bg-gray-600 rounded-full"></div>
+                  
+                  {/* Direction Arrow */}
+                  <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
+                    <div className="flex items-center gap-1 text-gray-600">
+                      <Compass className="w-3 h-3" />
+                      <span className="text-xs font-medium">Travel Direction</span>
+                      <div className="w-0 h-0 border-l-3 border-r-3 border-t-3 border-l-transparent border-r-transparent border-t-gray-600"></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Facing Direction Indicator */}
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-1 text-xs text-gray-600">
+                    <span>Facing</span>
+                    <div className="w-0 h-0 border-l-2 border-r-2 border-b-2 border-l-transparent border-r-transparent border-b-gray-600"></div>
+                    <span>Forward</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seat Legend */}
+              <div className="flex justify-center gap-6 mt-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                  <span className="text-xs text-gray-600">Available</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded ${
+                    getRecommendationSide() === 'left' ? 'bg-blue-500' : 'bg-amber-500'
+                  }`}></div>
+                  <span className="text-xs text-gray-600">Recommended</span>
+                </div>
+              </div>
             </div>
             
-            {/* Enhanced Primary CTA Button */}
+            {/* Primary CTA Button */}
             <Button 
               onClick={handleCheckSafeSide}
               disabled={safeSeatLoading}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
-              className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+              className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group border-0 mb-6"
               size="lg"
             >
-              {/* Animated Background */}
               <div className={`absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 ${
-                isHovered ? 'scale-105' : 'scale-100'
+                isHovered ? 'scale-105 brightness-110' : 'scale-100'
               }`}></div>
               
-              {/* Button Content */}
               <div className="relative z-10 flex items-center justify-center">
-                <Shield className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
-                <span>Find My Safe Seat</span>
-                <div className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
-                  <Compass className="w-5 h-5 animate-pulse" />
+                <Shield className="w-6 h-6 mr-3 transition-transform group-hover:scale-110" />
+                <span className="text-white font-bold">
+                  {routeRecommendation ? 'Check Current Location' : 'Find My Best Seat'}
+                </span>
+                <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <Compass className="w-5 h-5 text-white animate-pulse" />
                 </div>
               </div>
             </Button>
 
-            {/* Enhanced Feature List */}
-            <div className="mt-8 space-y-4">
-              <div className="flex items-center gap-4 p-3 bg-white/50 rounded-xl border border-gray-100 transition-all hover:bg-white hover:shadow-md">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 text-blue-600">
+            {/* Vehicle-focused Features */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-4 p-3 bg-blue-50 rounded-xl border border-blue-100 transition-all hover:bg-blue-100">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 text-blue-600">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">Precise GPS Location</p>
-                  <p className="text-sm text-gray-600">Uses your exact position for accurate results</p>
+                  <p className="font-semibold text-gray-900 text-sm">Smart Positioning</p>
+                  <p className="text-xs text-gray-600">Optimal seat based on sun direction</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-3 bg-white/50 rounded-xl border border-gray-100 transition-all hover:bg-white hover:shadow-md">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 text-green-600">
+              <div className="flex items-center gap-4 p-3 bg-amber-50 rounded-xl border border-amber-100 transition-all hover:bg-amber-100">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 text-amber-600">
                   <Compass className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">Smart Direction Detection</p>
-                  <p className="text-sm text-gray-600">Automatically detects your travel direction</p>
+                  <p className="font-semibold text-gray-900 text-sm">Direction Aware</p>
+                  <p className="text-xs text-gray-600">Real-time travel direction detection</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-3 bg-white/50 rounded-xl border border-gray-100 transition-all hover:bg-white hover:shadow-md">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 text-amber-600">
+              <div className="flex items-center gap-4 p-3 bg-green-50 rounded-xl border border-green-100 transition-all hover:bg-green-100">
+                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-100 text-green-600">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">Real-time Sun Position</p>
-                  <p className="text-sm text-gray-600">Calculates based on current time and location</p>
+                  <p className="font-semibold text-gray-900 text-sm">Time Analysis</p>
+                  <p className="text-xs text-gray-600">Considers current sun position</p>
                 </div>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Enhanced Action Grid */}
+        {/* Enhanced Action Buttons */}
         <div className="grid grid-cols-2 gap-4 animate-fade-in-up">
+          {/* Route Mode Button */}
           <Card 
-            className="p-5 cursor-pointer group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl overflow-hidden relative"
+            className="p-4 cursor-pointer group hover:shadow-lg transition-all duration-300 border border-blue-200 bg-white rounded-2xl overflow-hidden relative"
             onClick={handleRouteMode}
           >
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
-            <div className="relative z-10">
-              <Navigation className="w-7 h-7 mb-3 transform group-hover:scale-110 transition-transform" />
-              <h3 className="font-bold text-sm mb-1">Route Mode</h3>
-              <p className="text-xs text-blue-100 opacity-90">
-                Plan your entire journey
+            <div className="relative z-10 text-center">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 mb-2 group-hover:scale-110 transition-transform mx-auto">
+                <Navigation className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-sm mb-1">Route Mode</h3>
+              <p className="text-xs text-gray-600">
+                Plan journey
               </p>
             </div>
           </Card>
 
+          {/* Settings Button */}
           <Card 
-            className="p-5 cursor-pointer group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-gray-600 to-gray-700 text-white rounded-2xl overflow-hidden relative"
-            onClick={() => navigate('/settings')}
+            className="p-4 cursor-pointer group hover:shadow-lg transition-all duration-300 border border-gray-200 bg-white rounded-2xl overflow-hidden relative"
+            onClick={handleSettings}
           >
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
-            <div className="relative z-10">
-              <Settings className="w-7 h-7 mb-3 transform group-hover:scale-110 transition-transform" />
-              <h3 className="font-bold text-sm mb-1">Settings</h3>
-              <p className="text-xs text-gray-300 opacity-90">
-                Customize preferences
+            <div className="relative z-10 text-center">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 mb-2 group-hover:scale-110 transition-transform mx-auto">
+                <Settings className="w-5 h-5 text-gray-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-sm mb-1">Settings</h3>
+              <p className="text-xs text-gray-600">
+                Preferences
               </p>
             </div>
           </Card>
         </div>
 
-        {/* Enhanced Info Footer */}
-        <div className="mt-8 text-center animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border border-gray-100">
+        {/* Status Footer */}
+        <div className="mt-6 text-center animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow border border-gray-100">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <p className="text-xs text-gray-600 font-medium">
-              Ready to find your perfect seat • 100% private & secure
+            <p className="text-xs text-gray-700 font-medium">
+              Ready to find your perfect seat
             </p>
           </div>
         </div>
