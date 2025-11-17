@@ -19,7 +19,16 @@ interface SeatRecommendation {
   reason: string;
   bearing: number;
   sunPosition: string;
+  [key: string]: any;
 }
+
+// Define possible recommendation types
+type RecommendationResult = 
+  | string 
+  | { recommendedSide: string; reason?: string; sunAzimuth?: number }
+  | { side: string; reason?: string; sunPosition?: string }
+  | { recommendedSeat: string; description?: string }
+  | any;
 
 const RouteMode = () => {
   const navigate = useNavigate();
@@ -86,15 +95,72 @@ const RouteMode = () => {
       const bearing = calculateBearing(originCoords.lat, originCoords.lon, destCoords.lat, destCoords.lon);
 
       // Calculate seat recommendation
-      const recommendation = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing);
+      const recommendation: RecommendationResult = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing);
 
-      // ✅ FIXED: Use the correct properties from the SeatRecommendation interface
+      // ✅ FIXED: Properly handle the recommendation data structure with type safety
+      let recommendedSide: 'left' | 'right';
+      let reason: string;
+      let sunPosition: string;
+
+      // Debug log to see what calculateSeatRecommendation actually returns
+      console.log('Raw recommendation from calculator:', recommendation);
+      console.log('Type of recommendation:', typeof recommendation);
+
+      // Handle different possible return structures from calculateSeatRecommendation
+      if (typeof recommendation === 'string') {
+        // If it returns a simple string like "left" or "right"
+        const sideStr = recommendation.toLowerCase();
+        recommendedSide = sideStr.includes('left') ? 'left' : 'right';
+        reason = `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
+        sunPosition = `Travel direction: ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
+      } else if (recommendation && typeof recommendation === 'object') {
+        // If it returns an object - safely check each possible property
+        
+        // Check for recommendedSide property
+        if (recommendation.recommendedSide && typeof recommendation.recommendedSide === 'string') {
+          const sideStr = recommendation.recommendedSide.toLowerCase();
+          recommendedSide = sideStr.includes('left') ? 'left' : 'right';
+        } 
+        // Check for side property
+        else if (recommendation.side && typeof recommendation.side === 'string') {
+          const sideStr = recommendation.side.toLowerCase();
+          recommendedSide = sideStr.includes('left') ? 'left' : 'right';
+        }
+        // Check for recommendedSeat property
+        else if (recommendation.recommendedSeat && typeof recommendation.recommendedSeat === 'string') {
+          const sideStr = recommendation.recommendedSeat.toLowerCase();
+          recommendedSide = sideStr.includes('left') ? 'left' : 'right';
+        } else {
+          // Fallback if no recognizable side property found
+          console.warn('No recognizable side property found in recommendation, using bearing-based fallback');
+          recommendedSide = bearing >= 0 && bearing < 180 ? 'left' : 'right';
+        }
+
+        // Set reason and sunPosition with proper type checking
+        reason = (typeof recommendation.reason === 'string' ? recommendation.reason : 
+                 typeof recommendation.description === 'string' ? recommendation.description :
+                 `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`);
+
+        sunPosition = (typeof recommendation.sunPosition === 'string' ? recommendation.sunPosition :
+                      typeof recommendation.sunAzimuth === 'number' ? `Sun is at ${recommendation.sunAzimuth.toFixed(1)}°` :
+                      `Travel direction: ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`);
+      } else {
+        // Final fallback - use bearing to determine side
+        console.warn('Unexpected recommendation type, using bearing-based calculation');
+        recommendedSide = bearing >= 0 && bearing < 180 ? 'left' : 'right';
+        reason = `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
+        sunPosition = `Direction: ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
+      }
+
+      // Create consistent recommendation object
       const fullRecommendation: SeatRecommendation = {
-        side: recommendation.recommendedSide.toLowerCase() as 'left' | 'right',
-        reason: `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`,
+        side: recommendedSide,
+        reason: reason,
         bearing: bearing,
-        sunPosition: `Sun is at ${recommendation.sunAzimuth.toFixed(1)}° (${degreesToCardinal(recommendation.sunAzimuth)}) - ${recommendation.sunPosition.toLowerCase()} side`
+        sunPosition: sunPosition
       };
+
+      console.log('Final recommendation object:', fullRecommendation);
 
       // Navigate back to home page with the full recommendation data
       navigate('/', {

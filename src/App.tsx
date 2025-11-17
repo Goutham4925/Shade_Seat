@@ -9,7 +9,7 @@ import HeadingSelect from "./pages/HeadingSelect";
 import RouteMode from "./pages/RouteMode";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import { Analytics } from '@vercel/analytics/next';
+
 
 
 const queryClient = new QueryClient();
@@ -31,7 +31,6 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-    <Analytics />
   </QueryClientProvider>
 );
 

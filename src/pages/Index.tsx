@@ -12,6 +12,7 @@ interface SeatRecommendation {
   reason: string;
   bearing: number;
   sunPosition: string;
+  [key: string]: any;
 }
 
 const Index = () => {
@@ -24,6 +25,7 @@ const Index = () => {
   // Handle route recommendation when coming from RouteMode
   useEffect(() => {
     if (location.state?.recommendation) {
+      console.log('Received route recommendation data:', location.state);
       setRouteRecommendation(location.state);
       toast.success("Route analysis complete!");
       
@@ -133,20 +135,54 @@ const Index = () => {
     return 'Unknown recommendation';
   };
 
-  const getRecommendationSide = () => {
+  const getRecommendationSide = (): 'left' | 'right' | null => {
     if (!routeRecommendation?.recommendation) return null;
     
     const rec = routeRecommendation.recommendation;
     
-    if (typeof rec === 'string') {
-      return rec.toLowerCase().includes('left') ? 'left' : 'right';
-    } else if (rec.side) {
-      return rec.side;
-    } else if (rec.recommendedSeat) {
-      return rec.recommendedSeat;
-    }
+    console.log('Raw recommendation in Index:', rec);
+    console.log('Type of recommendation:', typeof rec);
     
-    return 'right';
+    try {
+      // Handle string recommendation
+      if (typeof rec === 'string') {
+        const side = rec.toLowerCase().trim();
+        return side.includes('left') ? 'left' : 'right';
+      }
+      
+      // Handle object recommendation
+      if (rec && typeof rec === 'object') {
+        // Check for side property
+        if (rec.side && typeof rec.side === 'string') {
+          const side = rec.side.toLowerCase().trim();
+          return side.includes('left') ? 'left' : 'right';
+        }
+        
+        // Check for recommendedSide property  
+        if (rec.recommendedSide && typeof rec.recommendedSide === 'string') {
+          const side = rec.recommendedSide.toLowerCase().trim();
+          return side.includes('left') ? 'left' : 'right';
+        }
+        
+        // Check for recommendedSeat property
+        if (rec.recommendedSeat && typeof rec.recommendedSeat === 'string') {
+          const side = rec.recommendedSeat.toLowerCase().trim();
+          return side.includes('left') ? 'left' : 'right';
+        }
+      }
+      
+      // Fallback based on bearing if available
+      if (routeRecommendation.bearing !== undefined && typeof routeRecommendation.bearing === 'number') {
+        return routeRecommendation.bearing >= 0 && routeRecommendation.bearing < 180 ? 'left' : 'right';
+      }
+      
+      console.warn('Could not determine recommendation side, using fallback');
+      return 'right'; // Final fallback
+      
+    } catch (error) {
+      console.error('Error determining recommendation side:', error);
+      return 'right'; // Error fallback
+    }
   };
 
   return (
