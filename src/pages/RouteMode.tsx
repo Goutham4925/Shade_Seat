@@ -48,7 +48,7 @@ const RouteMode = () => {
     setIsLoading(true);
 
     try {
-      const { geocodeAddress, calculateBearing, calculateSeatRecommendation } = await import("@/lib/sunCalculator");
+      const { geocodeAddress, calculateBearing, calculateSeatRecommendation, degreesToCardinal } = await import("@/lib/sunCalculator");
       
       // Parse or geocode origin
       let originCoords: { lat: number; lon: number } | null = null;
@@ -88,13 +88,12 @@ const RouteMode = () => {
       // Calculate seat recommendation
       const recommendation = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing);
 
-      // ✅ FIXED: Ensure recommendation has proper structure
+      // ✅ FIXED: Use the correct properties from the SeatRecommendation interface
       const fullRecommendation: SeatRecommendation = {
-        side: recommendation.side || recommendation.recommendedSeat || (typeof recommendation === 'string' ? 
-              (recommendation.toLowerCase().includes('left') ? 'left' : 'right') : 'right'),
-        reason: recommendation.reason || `Based on your travel direction of ${bearing.toFixed(1)}°`,
+        side: recommendation.recommendedSide.toLowerCase() as 'left' | 'right',
+        reason: `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`,
         bearing: bearing,
-        sunPosition: recommendation.sunPosition || 'Calculated based on current time and location'
+        sunPosition: `Sun is at ${recommendation.sunAzimuth.toFixed(1)}° (${degreesToCardinal(recommendation.sunAzimuth)}) - ${recommendation.sunPosition.toLowerCase()} side`
       };
 
       // Navigate back to home page with the full recommendation data
