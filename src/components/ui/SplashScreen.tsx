@@ -22,12 +22,11 @@ const SplashScreen = ({
   const [isVisible, setIsVisible] = useState(true);
   const [stage, setStage] = useState(0);
 
-  // Split message into words instead of individual letters
+  // Split message into words
   const words = message.split(" ");
 
   // Compute dynamic timing based on words
-  const totalLetters = message.replace(/\s/g, "").length;
-  const textAnimationDuration = totalLetters * perLetterDelay;
+  const textAnimationDuration = words.length * perLetterDelay * 3; // Adjust timing for words
   const expansionStart = baseDuration / 1.5;
   const textStart = expansionStart + 100;
   const finishTime = textStart + textAnimationDuration + 500 + POST_ANIMATION_PAUSE;
@@ -57,9 +56,6 @@ const SplashScreen = ({
     size: Math.random() * 6 + 2, // size between 2-8px
     delay: Math.random() * 1, // delay for animation
   }));
-
-  // Calculate cumulative letter count for delays
-  let cumulativeLetters = 0;
 
   return (
     <AnimatePresence>
@@ -133,50 +129,31 @@ const SplashScreen = ({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <motion.h1 className="text-6xl font-extrabold text-white drop-shadow-lg mb-2 flex flex-wrap justify-center gap-x-2">
-                {words.map((word, wordIndex) => {
-                  const wordLetters = word.split("");
-                  const wordStartDelay = cumulativeLetters;
-                  cumulativeLetters += wordLetters.length;
-                  
-                  return (
-                    <motion.span
-                      key={wordIndex}
-                      className="inline-flex"
-                      initial={{ y: 50, opacity: 0, rotate: 15 }}
-                      animate={{ y: 0, opacity: 1, rotate: 0 }}
-                      transition={{
-                        delay: (perLetterDelay * wordStartDelay) / 1000,
-                        duration: 0.6,
-                        ease: "easeOut",
-                      }}
-                    >
-                      {wordLetters.map((letter, letterIndex) => (
-                        <motion.span
-                          key={`${wordIndex}-${letterIndex}`}
-                          initial={{ y: 50, opacity: 0, rotate: 15 }}
-                          animate={{ y: 0, opacity: 1, rotate: 0 }}
-                          transition={{
-                            delay: (perLetterDelay * (wordStartDelay + letterIndex)) / 1000,
-                            duration: 0.6,
-                            ease: "easeOut",
-                          }}
-                        >
-                          {letter}
-                        </motion.span>
-                      ))}
-                    </motion.span>
-                  );
-                })}
+              <motion.h1 className="text-6xl font-extrabold text-white drop-shadow-lg mb-2 flex flex-wrap justify-center gap-x-4">
+                {words.map((word, index) => (
+                  <motion.span
+                    key={index}
+                    className="inline-block whitespace-nowrap"
+                    initial={{ y: 60, opacity: 0, rotate: 10 }}
+                    animate={{ y: 0, opacity: 1, rotate: 0 }}
+                    transition={{
+                      delay: (perLetterDelay * index * 3) / 1000, // Stagger by word index
+                      duration: 0.8,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                    }}
+                  >
+                    {word}
+                  </motion.span>
+                ))}
               </motion.h1>
 
               <motion.p
-                className="text-white text-lg opacity-90"
+                className="text-white text-lg opacity-90 mt-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 0.9, y: 0 }}
                 transition={{
                   duration: 0.6,
-                  delay: (perLetterDelay * totalLetters) / 1000 + 0.1,
+                  delay: (perLetterDelay * words.length * 3) / 1000 + 0.2,
                 }}
               >
                 Smart Seat Selection
