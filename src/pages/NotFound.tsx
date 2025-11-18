@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Player } from "@lottiefiles/react-lottie-player";
-import animationData from '../../public/animations/404-animation.json';
+import animationData from '../animations/404-animation.json';
 import { ArrowLeft } from "lucide-react";
 
 

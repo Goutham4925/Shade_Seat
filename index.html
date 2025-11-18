@@ -22,12 +22,12 @@
     <meta name="twitter:description" content="Find the best seat to avoid direct sunlight" />
     <meta name="twitter:image" content="/public/sun-logo.png" />
     
-    <link rel="manifest" href="/public/manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     
     <!-- PNG Favicon Links - reference from public folder -->
-    <link rel="icon" type="image/png" href="/public/favicon.png">
-    <link rel="shortcut icon" href="/public/favicon.png">
-    <link rel="apple-touch-icon" href="/public/favicon.png">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="shortcut icon" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
     
     <!-- Material Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
@@ -47,7 +47,7 @@
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
         link.type = 'image/png';
         link.rel = 'icon';
-        link.href = '/public/favicon.png?' + new Date().getTime();
+        link.href = '/favicon.png?' + new Date().getTime();
         document.head.appendChild(link);
       }, 1000);
     </script>

@@ -8,6 +8,7 @@ import { Navigation, MapPin, Compass, Settings, Shield, Clock, Route, X, Lightbu
 import { toast } from "sonner";
 import { HeadingDetector } from "@/lib/headingDetector";
 import Lottie from "lottie-react";
+import littleSunAnimation from "@/animations/little sun.json";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -23,9 +24,8 @@ const Index = () => {
   useEffect(() => {
     const loadAnimation = async () => {
       try {
-        const response = await fetch('/animations/little sun.json');
-        const data = await response.json();
-        setAnimationData(data);
+        // Since the animation is now in src, we can import it directly
+        setAnimationData(littleSunAnimation);
       } catch (error) {
         console.warn('Could not load Lottie animation');
       }
@@ -204,7 +204,7 @@ const Index = () => {
         {/* Premium Header */}
         <div className="text-center mb-8 animate-fade-in-up">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
-            SunSafe
+            Shade Seat
           </h1>
           <p className="text-lg text-gray-700 mb-2 font-medium">
             Smart Seat Selection
@@ -329,26 +329,31 @@ const Index = () => {
             </div>
             
             {/* Primary CTA Button */}
-            <Button 
+            <Button
               onClick={handleCheckSafeSide}
               disabled={safeSeatLoading}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
-              className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group border-0 mb-6"
+              className="w-full h-16 text-lg font-semibold rounded-2xl shadow-lg transition-shadow duration-300 relative overflow-hidden border-0 mb-6"
               size="lg"
             >
-              <div className={`absolute inset-0 bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 ${
-                isHovered ? 'scale-105 brightness-110' : 'scale-100'
-              }`}></div>
-              
-              <div className="relative z-10 flex items-center justify-center">
-                <Shield className="w-6 h-6 mr-3 transition-transform group-hover:scale-110" />
+              {/* Animated gradient background */}
+              <div
+                className="absolute inset-0 z-0 rounded-2xl transition-all duration-1000"
+                style={{
+                  background: 'linear-gradient(to right, #f59e0b 40%, #fb923c 100%)',
+                  backgroundSize: '200% 100%',
+                  backgroundPosition: isHovered ? '100% 0' : '0 0',
+                  transition: 'background-position 1s ease',
+                }}
+              ></div>
+
+              {/* Button content */}
+              <div className="relative z-10 flex items-center justify-center w-full h-full">
+                <Shield className="w-6 h-6 mr-3" />
                 <span className="text-white font-bold">
                   {routeRecommendation ? 'Check Current Location' : 'Find My Best Seat'}
                 </span>
-                <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <Compass className="w-5 h-5 text-white animate-pulse" />
-                </div>
               </div>
             </Button>
 
