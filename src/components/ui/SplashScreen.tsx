@@ -22,10 +22,12 @@ const SplashScreen = ({
   const [isVisible, setIsVisible] = useState(true);
   const [stage, setStage] = useState(0);
 
-  const letters = message.split(""); // Split message into letters
+  // Split message into words instead of individual letters
+  const words = message.split(" ");
 
-  // Compute dynamic timing based on letters
-  const textAnimationDuration = letters.length * perLetterDelay;
+  // Compute dynamic timing based on words
+  const totalLetters = message.replace(/\s/g, "").length;
+  const textAnimationDuration = totalLetters * perLetterDelay;
   const expansionStart = baseDuration / 1.5;
   const textStart = expansionStart + 100;
   const finishTime = textStart + textAnimationDuration + 500 + POST_ANIMATION_PAUSE;
@@ -55,6 +57,9 @@ const SplashScreen = ({
     size: Math.random() * 6 + 2, // size between 2-8px
     delay: Math.random() * 1, // delay for animation
   }));
+
+  // Calculate cumulative letter count for delays
+  let cumulativeLetters = 0;
 
   return (
     <AnimatePresence>
@@ -128,21 +133,38 @@ const SplashScreen = ({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <motion.h1 className="text-6xl font-extrabold text-white drop-shadow-lg mb-2 flex flex-wrap justify-center">
-                {letters.map((letter, i) => {
-                  if (letter === " ") return <span key={i} className="w-2" />; // preserve spaces
+              <motion.h1 className="text-6xl font-extrabold text-white drop-shadow-lg mb-2 flex flex-wrap justify-center gap-x-2">
+                {words.map((word, wordIndex) => {
+                  const wordLetters = word.split("");
+                  const wordStartDelay = cumulativeLetters;
+                  cumulativeLetters += wordLetters.length;
+                  
                   return (
                     <motion.span
-                      key={i}
+                      key={wordIndex}
+                      className="inline-flex"
                       initial={{ y: 50, opacity: 0, rotate: 15 }}
                       animate={{ y: 0, opacity: 1, rotate: 0 }}
                       transition={{
-                        delay: (perLetterDelay * i) / 1000, // convert ms to s
+                        delay: (perLetterDelay * wordStartDelay) / 1000,
                         duration: 0.6,
                         ease: "easeOut",
                       }}
                     >
-                      {letter}
+                      {wordLetters.map((letter, letterIndex) => (
+                        <motion.span
+                          key={`${wordIndex}-${letterIndex}`}
+                          initial={{ y: 50, opacity: 0, rotate: 15 }}
+                          animate={{ y: 0, opacity: 1, rotate: 0 }}
+                          transition={{
+                            delay: (perLetterDelay * (wordStartDelay + letterIndex)) / 1000,
+                            duration: 0.6,
+                            ease: "easeOut",
+                          }}
+                        >
+                          {letter}
+                        </motion.span>
+                      ))}
                     </motion.span>
                   );
                 })}
@@ -154,7 +176,7 @@ const SplashScreen = ({
                 animate={{ opacity: 0.9, y: 0 }}
                 transition={{
                   duration: 0.6,
-                  delay: (perLetterDelay * letters.length) / 1000 + 0.1,
+                  delay: (perLetterDelay * totalLetters) / 1000 + 0.1,
                 }}
               >
                 Smart Seat Selection
