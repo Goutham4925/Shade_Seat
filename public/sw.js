@@ -1,7 +1,7 @@
 // Increment cache version on every deploy
-const CACHE_NAME = 'sunsafe-v4';
+const CACHE_NAME = 'sunsafe-v5';
 
-// List of core static files to pre-cache
+// Core static assets to pre-cache
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -25,16 +25,14 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) =>
       Promise.all(
         cacheNames.map((name) => {
-          if (name !== CACHE_NAME) {
-            return caches.delete(name);
-          }
+          if (name !== CACHE_NAME) return caches.delete(name);
         })
       )
     ).then(() => self.clients.claim()) // Take control immediately
   );
 });
 
-// Fetch event – cache first, then network fallback
+// Fetch event – cache first, network fallback, dynamic caching for assets
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -44,17 +42,25 @@ self.addEventListener('fetch', (event) => {
 
       return fetch(event.request)
         .then((networkResponse) => {
-          // Dynamically cache assets in /assets/ (hashed Vite files)
+          // Clone the response immediately for caching
+          const responseClone = networkResponse.clone();
+
+          // Dynamically cache all /assets/ requests
           if (event.request.url.includes('/assets/')) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse.clone());
-            });
+            event.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseClone);
+              })
+            );
           }
+
           return networkResponse;
         })
         .catch(() => {
           // Optional: fallback for navigation requests if offline
-          if (event.request.mode === 'navigate') return caches.match('/');
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
         });
     })
   );
