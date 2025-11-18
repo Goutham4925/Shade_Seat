@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Player } from "@lottiefiles/react-lottie-player";
 import animationData from '../animations/404-animation.json';
 import { ArrowLeft } from "lucide-react";
-
+import { Link } from "react-router-dom";
 
 const NotFound = () => {
   const location = useLocation();
@@ -22,8 +22,8 @@ const NotFound = () => {
           style={{ height: '300px', width: '300px' }}
           className="mx-auto mb-4"
         />
-        <a
-          href="/"
+        <Link
+          to="/"
           className="
             inline-flex items-center
             mb-6 -ml-4
@@ -36,7 +36,7 @@ const NotFound = () => {
         >
           <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
           Return to Home
-        </a>
+        </Link>
       </div>
     </div>
   );

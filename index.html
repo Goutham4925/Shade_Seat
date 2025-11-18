@@ -6,33 +6,34 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    
+
     <title>SunSafe Seat Advisor - Find Your Safe Seat</title>
     <meta name="description" content="Avoid direct sunlight on your commute. Get real-time seat recommendations based on sun position and travel direction." />
     <meta name="author" content="SunSafe" />
     <meta name="theme-color" content="#0EA5E9" />
 
+    <!-- Open Graph / Social -->
     <meta property="og:title" content="SunSafe Seat Advisor - Find Your Safe Seat" />
     <meta property="og:description" content="Avoid direct sunlight on your commute. Get real-time seat recommendations based on sun position and travel direction." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/public/sun-logo.png" />
+    <meta property="og:image" content="/sun-logo.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="SunSafe Seat Advisor" />
     <meta name="twitter:description" content="Find the best seat to avoid direct sunlight" />
-    <meta name="twitter:image" content="/public/sun-logo.png" />
-    
+    <meta name="twitter:image" content="/sun-logo.png" />
+
     <link rel="manifest" href="/manifest.json" />
-    
-    <!-- PNG Favicon Links - reference from public folder -->
+
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="shortcut icon" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
-    
+
     <!-- Material Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-    
-    <!-- Preconnect to Google Fonts for better performance -->
+
+    <!-- Google Fonts Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   </head>
@@ -40,8 +41,8 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Force favicon refresh script -->
+
+    <!-- Favicon cache-buster (optional) -->
     <script>
       setTimeout(() => {
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
