@@ -1,5 +1,7 @@
-const CACHE_NAME = 'sunsafe-v6';
+// Service Worker
+const CACHE_NAME = 'shadeseat-v7';
 
+// Core static assets to pre-cache
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -13,7 +15,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()) // Activate SW immediately
   );
 });
 
@@ -26,7 +28,7 @@ self.addEventListener('activate', (event) => {
           if (name !== CACHE_NAME) return caches.delete(name);
         })
       )
-    ).then(() => self.clients.claim())
+    ).then(() => self.clients.claim()) // Take control immediately
   );
 });
 
@@ -39,9 +41,12 @@ self.addEventListener('fetch', (event) => {
       if (cachedResponse) return cachedResponse;
 
       return fetch(event.request).then((networkResponse) => {
-        // Only try to cache if response is ok and type is basic/opaque
         try {
-          if (event.request.url.includes('/assets/')) {
+          // Only cache http/https requests in /assets/
+          if (
+            event.request.url.startsWith('http') &&
+            event.request.url.includes('/assets/')
+          ) {
             const responseClone = networkResponse.clone();
             event.waitUntil(
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone))
@@ -53,7 +58,10 @@ self.addEventListener('fetch', (event) => {
 
         return networkResponse;
       }).catch(() => {
-        if (event.request.mode === 'navigate') return caches.match('/');
+        // Fallback for navigation requests (offline)
+        if (event.request.mode === 'navigate') {
+          return caches.match('/');
+        }
       });
     })
   );
