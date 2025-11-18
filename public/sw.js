@@ -1,7 +1,5 @@
-// Increment cache version on every deploy
-const CACHE_NAME = 'sunsafe-v5';
+const CACHE_NAME = 'sunsafe-v6';
 
-// Core static assets to pre-cache
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -15,7 +13,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting()) // Activate SW immediately
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -28,11 +26,11 @@ self.addEventListener('activate', (event) => {
           if (name !== CACHE_NAME) return caches.delete(name);
         })
       )
-    ).then(() => self.clients.claim()) // Take control immediately
+    ).then(() => self.clients.claim())
   );
 });
 
-// Fetch event – cache first, network fallback, dynamic caching for assets
+// Fetch event – cache first, network fallback, dynamic caching
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -40,28 +38,23 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
 
-      return fetch(event.request)
-        .then((networkResponse) => {
-          // Clone the response immediately for caching
-          const responseClone = networkResponse.clone();
-
-          // Dynamically cache all /assets/ requests
+      return fetch(event.request).then((networkResponse) => {
+        // Only try to cache if response is ok and type is basic/opaque
+        try {
           if (event.request.url.includes('/assets/')) {
+            const responseClone = networkResponse.clone();
             event.waitUntil(
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, responseClone);
-              })
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone))
             );
           }
+        } catch (err) {
+          console.warn('SW caching skipped for', event.request.url, err);
+        }
 
-          return networkResponse;
-        })
-        .catch(() => {
-          // Optional: fallback for navigation requests if offline
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-        });
+        return networkResponse;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') return caches.match('/');
+      });
     })
   );
 });

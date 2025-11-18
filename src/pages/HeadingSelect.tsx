@@ -46,15 +46,12 @@ const HeadingSelect = () => {
           <Button
             variant="ghost"
             onClick={() => navigate('/')}
-            className="mb-4"
+            className="mb-6 -ml-4 hover:bg-gray-100 hover:text-black dark:hover:bg-gray-700 dark:hover:text-white rounded-2xl transition-all group"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" />
             Back
           </Button>
           
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
-            <Navigation className="w-8 h-8 text-primary" />
-          </div>
           
           <h1 className="text-2xl font-bold text-foreground mb-2">
             Select Your Direction
