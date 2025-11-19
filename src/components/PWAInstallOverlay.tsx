@@ -7,7 +7,6 @@ export const PWAInstallOverlay = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
     // Check device type
@@ -15,13 +14,14 @@ export const PWAInstallOverlay = () => {
     setIsMobile(mobileCheck);
 
     const handleBeforeInstallPrompt = (e: any) => {
+      console.log('✅ PWA Install Available!');
       e.preventDefault();
       setDeferredPrompt(e);
-      setCanInstall(true); // We have a valid install prompt
       
       const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
       const hasInstalled = localStorage.getItem('pwa-install-accepted');
       
+      // ONLY show overlay if PWA install is actually available
       if (!hasSeenPrompt && !hasInstalled) {
         setIsVisible(true);
       }
@@ -29,77 +29,44 @@ export const PWAInstallOverlay = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Show overlay after delay
-    const showTimer = setTimeout(() => {
-      const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
-      const hasInstalled = localStorage.getItem('pwa-install-accepted');
-      const isInstalled = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-      
-      if (!hasSeenPrompt && !hasInstalled && !isInstalled && !isVisible) {
-        setIsVisible(true);
-      }
-    }, 2000);
+    // Remove the auto-show timer - only show when PWA is actually available
+    // This prevents showing instructions when install isn't possible
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      clearTimeout(showTimer);
     };
   }, []);
 
   const handleInstall = async () => {
-    if (deferredPrompt && canInstall) {
-      try {
-        // Show the native install prompt
-        deferredPrompt.prompt();
-        
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
-        
-        if (outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-          localStorage.setItem('pwa-install-accepted', 'true');
-        } else {
-          console.log('User dismissed the install prompt');
-        }
-        
-        // Clear the saved prompt since it can't be used again
-        setDeferredPrompt(null);
-        setIsVisible(false);
-        
-      } catch (error) {
-        console.error('Error during installation:', error);
-        showInstallInstructions();
-      }
-    } else {
-      // No deferred prompt available, show instructions
-      showInstallInstructions();
+    if (!deferredPrompt) {
+      // This shouldn't happen if we only show the button when install is available
+      console.error('No install prompt available');
+      setIsVisible(false);
+      return;
     }
-  };
 
-  const showInstallInstructions = () => {
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    const isChrome = /Chrome/i.test(navigator.userAgent);
-    
-    let instructions = '';
-    
-    if (isIOS) {
-      instructions = `To install Shade Seat:
-1. Tap the Share button (📤) at the bottom
-2. Scroll down and tap "Add to Home Screen" 
-3. Tap "Add" in the top right`;
-    } else if (isAndroid && isChrome) {
-      instructions = `To install Shade Seat:
-1. Tap the menu (⋮) in the top right  
-2. Tap "Add to Home screen" or "Install app"
-3. Tap "Install" to confirm`;
-    } else {
-      instructions = `To install Shade Seat:
-Look for the install icon in your browser's address bar or menu.`;
+    try {
+      // Show the native install prompt
+      deferredPrompt.prompt();
+      
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('✅ User accepted the install prompt');
+        localStorage.setItem('pwa-install-accepted', 'true');
+      } else {
+        console.log('❌ User dismissed the install prompt');
+      }
+      
+      // Clear the saved prompt since it can't be used again
+      setDeferredPrompt(null);
+      setIsVisible(false);
+      
+    } catch (error) {
+      console.error('Error during installation:', error);
+      setIsVisible(false);
     }
-    
-    alert(instructions);
-    setIsVisible(false);
   };
 
   const handleDismiss = () => {
@@ -116,7 +83,10 @@ Look for the install icon in your browser's address bar or menu.`;
     return null;
   }
 
-  if (!isVisible) return null;
+  // ONLY show if we have a valid install prompt
+  if (!isVisible || !deferredPrompt) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
