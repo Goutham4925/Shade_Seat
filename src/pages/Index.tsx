@@ -11,26 +11,54 @@ import Lottie from "lottie-react";
 import littleSunAnimation from "@/animations/little sun.json";
 import { useSettings } from "@/contexts/SettingsContext";
 
-// PWA Install Overlay Component
+// PWA Install Overlay Component - Mobile Optimized
 const PWAInstallOverlay = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [pwaSupported, setPwaSupported] = useState(false);
 
   useEffect(() => {
+    // Check device type
+    const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(mobileCheck);
+
+    // Check PWA support
+    const checkPwaSupport = () => {
+      const checks = {
+        hasManifest: !!document.querySelector('link[rel="manifest"]'),
+        hasServiceWorker: 'serviceWorker' in navigator,
+        isHTTPS: window.location.protocol === 'https:',
+        isLocalhost: window.location.hostname === 'localhost',
+        beforeInstallPrompt: 'BeforeInstallPromptEvent' in window
+      };
+      
+      console.log('🔍 PWA Support Check:', checks);
+      return Object.values(checks).some(Boolean);
+    };
+
+    setPwaSupported(checkPwaSupport());
+
     const handleBeforeInstallPrompt = (e: any) => {
-      console.log('🔔 BeforeInstallPrompt event fired!');
+      console.log('🎉 BEFOREINSTALLPROMPT FIRED - PWA install available!');
       e.preventDefault();
       setDeferredPrompt(e);
       
-      // Check if we should show the overlay
+      // On mobile, wait for user interaction before showing prompt
+      if (mobileCheck) {
+        console.log('📱 Mobile detected - storing prompt for later');
+        // Don't auto-show on mobile, wait for user action
+      } else {
+        // On desktop, show immediately
+        showOverlay();
+      }
+    };
+
+    const showOverlay = () => {
       const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const hasInstalled = localStorage.getItem('pwa-install-accepted');
       
-      console.log('📱 Is mobile:', isMobile);
-      console.log('👀 Has seen prompt:', hasSeenPrompt);
-      
-      // Show on mobile or if we're testing
-      if (!hasSeenPrompt && (isMobile || process.env.NODE_ENV === 'development')) {
+      if (!hasSeenPrompt && !hasInstalled) {
         console.log('🎯 Showing install overlay');
         setIsVisible(true);
       }
@@ -38,48 +66,95 @@ const PWAInstallOverlay = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('📱 App is already installed');
-      setIsVisible(false);
-    }
+    // For mobile Chrome, we need to trigger after user interaction
+    const handleUserInteraction = () => {
+      if (deferredPrompt && mobileCheck && !isVisible) {
+        console.log('👆 User interaction detected - showing install prompt');
+        showOverlay();
+      }
+    };
 
-    // For testing: show after 3 seconds in development
+    // Add event listeners for user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+
+    // Development: auto-show after delay for testing
     if (process.env.NODE_ENV === 'development') {
-      const timer = setTimeout(() => {
-        console.log('⏰ Development timer - showing overlay');
-        setIsVisible(true);
+      setTimeout(() => {
+        if (!isVisible && !localStorage.getItem('pwa-prompt-dismissed')) {
+          console.log('🧪 Development mode - showing overlay');
+          setIsVisible(true);
+        }
       }, 3000);
-      return () => clearTimeout(timer);
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
     };
-  }, []);
+  }, [deferredPrompt, isVisible]);
 
   const handleInstall = async () => {
     console.log('🚀 Install button clicked');
-    if (!deferredPrompt) {
-      console.log('❌ No deferred prompt available');
-      return;
-    }
-
-    try {
-      console.log('📲 Prompting installation...');
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('✅ User choice:', outcome);
-      
-      if (outcome === 'accepted') {
-        localStorage.setItem('pwa-install-accepted', 'true');
+    
+    if (deferredPrompt) {
+      try {
+        console.log('📲 Prompting installation...');
+        deferredPrompt.prompt();
+        
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('✅ User choice:', outcome);
+        
+        if (outcome === 'accepted') {
+          localStorage.setItem('pwa-install-accepted', 'true');
+          console.log('🎉 PWA install accepted');
+        }
+        
+        setDeferredPrompt(null);
+        setIsVisible(false);
+        
+      } catch (error) {
+        console.error('❌ Error during install prompt:', error);
+        showManualInstructions();
       }
-      
-      setDeferredPrompt(null);
-      setIsVisible(false);
-    } catch (error) {
-      console.error('❌ Error installing PWA:', error);
+    } else {
+      console.log('📋 No deferred prompt, showing manual instructions');
+      showManualInstructions();
     }
+  };
+
+  const showManualInstructions = () => {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isChrome = /Chrome/i.test(navigator.userAgent);
+    
+    let instructions = '';
+    
+    if (isIOS) {
+      instructions = `To install Shade Seat on iOS:
+1. Tap the Share button (📤) at the bottom
+2. Scroll down and tap "Add to Home Screen" 
+3. Tap "Add" in the top right
+
+This will add the app to your home screen!`;
+    } else if (isAndroid && isChrome) {
+      instructions = `To install Shade Seat on Android Chrome:
+1. Tap the menu (⋮) in the top right  
+2. Tap "Add to Home screen" or "Install app"
+3. Tap "Install" to confirm
+
+The app will be added to your home screen!`;
+    } else {
+      instructions = `To install Shade Seat:
+Look for the install option in your browser menu, usually under:
+- "Add to Home Screen"
+- "Install app" 
+- Or check the address bar for an install icon`;
+    }
+    
+    alert(instructions);
+    setIsVisible(false);
   };
 
   const handleDismiss = () => {
@@ -87,15 +162,19 @@ const PWAInstallOverlay = () => {
     setIsVisible(false);
     localStorage.setItem('pwa-prompt-dismissed', 'true');
     
-    // Show again after 7 days for testing
+    // Show again after 14 days
     setTimeout(() => {
       localStorage.removeItem('pwa-prompt-dismissed');
-    }, 7 * 24 * 60 * 60 * 1000);
+    }, 14 * 24 * 60 * 60 * 1000);
   };
 
-  if (!isVisible) return null;
+  // Don't show if app is already installed
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('📱 App already installed in standalone mode');
+    return null;
+  }
 
-  console.log('🎪 Rendering PWA install overlay');
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -132,8 +211,22 @@ const PWAInstallOverlay = () => {
           </p>
           
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-            Install Shade Seat for quick access, offline functionality, and an optimized mobile experience.
+            {isMobile 
+              ? "Add to home screen for one-tap access and faster loading"
+              : "Install for quick access and offline functionality"
+            }
           </p>
+
+          {/* Debug info for development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center">
+                {isMobile ? '📱 Mobile' : '💻 Desktop'} | 
+                {deferredPrompt ? ' ✅ Install Ready' : ' ❌ No Prompt'} |
+                {pwaSupported ? ' ✅ PWA Supported' : ' ❌ PWA Issues'}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2 mb-6">
             <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-600">
@@ -151,6 +244,14 @@ const PWAInstallOverlay = () => {
                 <p className="text-xs text-gray-600 dark:text-gray-400">Launch from home screen</p>
               </div>
             </div>
+
+            <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-600">
+              <Clock className="w-5 h-5 text-purple-500" />
+              <div className="text-left flex-1">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Faster Loading</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Works offline when possible</p>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -162,8 +263,18 @@ const PWAInstallOverlay = () => {
               <div className="absolute inset-0 z-0 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all"></div>
               <div className="relative z-10 flex items-center justify-center w-full h-full gap-2">
                 <Download className="w-5 h-5 text-white" />
-                <span className="text-white font-bold">Install App</span>
+                <span className="text-white font-bold">
+                  {isMobile ? 'Add to Home Screen' : 'Install App'}
+                </span>
               </div>
+            </Button>
+
+            <Button
+              onClick={showManualInstructions}
+              variant="outline"
+              className="w-full border-blue-300 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            >
+              Show Instructions
             </Button>
 
             <Button
