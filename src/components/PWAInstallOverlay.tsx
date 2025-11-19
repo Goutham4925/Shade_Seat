@@ -7,7 +7,6 @@ export const PWAInstallOverlay = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [canInstall, setCanInstall] = useState(false);
 
   useEffect(() => {
     // Check device type
@@ -17,28 +16,33 @@ export const PWAInstallOverlay = () => {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setCanInstall(true); // We have a valid install prompt
       
-      const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
+      // Check if we've shown the overlay in this session
+      const hasSeenInSession = sessionStorage.getItem('pwa-prompt-shown');
       const hasInstalled = localStorage.getItem('pwa-install-accepted');
       
-      if (!hasSeenPrompt && !hasInstalled) {
+      // Only show if not shown in this session and not installed
+      if (!hasSeenInSession && !hasInstalled) {
         setIsVisible(true);
+        // Mark that we've shown it in this session
+        sessionStorage.setItem('pwa-prompt-shown', 'true');
       }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Show overlay after delay
+    // Show overlay after delay if not shown in this session
     const showTimer = setTimeout(() => {
-      const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
+      const hasSeenInSession = sessionStorage.getItem('pwa-prompt-shown');
       const hasInstalled = localStorage.getItem('pwa-install-accepted');
       const isInstalled = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
       
-      if (!hasSeenPrompt && !hasInstalled && !isInstalled && !isVisible) {
+      // Only show if not shown in this session, not installed, and not already visible
+      if (!hasSeenInSession && !hasInstalled && !isInstalled && !isVisible) {
         setIsVisible(true);
+        sessionStorage.setItem('pwa-prompt-shown', 'true');
       }
-    }, 2000);
+    }, 3000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -47,68 +51,31 @@ export const PWAInstallOverlay = () => {
   }, []);
 
   const handleInstall = async () => {
-    if (deferredPrompt && canInstall) {
+    if (deferredPrompt) {
+      // Direct PWA installation
       try {
-        // Show the native install prompt
         deferredPrompt.prompt();
-        
-        // Wait for the user to respond to the prompt
         const { outcome } = await deferredPrompt.userChoice;
         
         if (outcome === 'accepted') {
-          console.log('User accepted the install prompt');
           localStorage.setItem('pwa-install-accepted', 'true');
-        } else {
-          console.log('User dismissed the install prompt');
         }
         
-        // Clear the saved prompt since it can't be used again
         setDeferredPrompt(null);
         setIsVisible(false);
         
       } catch (error) {
-        console.error('Error during installation:', error);
-        showInstallInstructions();
+        setIsVisible(false);
       }
     } else {
-      // No deferred prompt available, show instructions
-      showInstallInstructions();
+      // No deferred prompt - just close
+      setIsVisible(false);
     }
-  };
-
-  const showInstallInstructions = () => {
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    const isChrome = /Chrome/i.test(navigator.userAgent);
-    
-    let instructions = '';
-    
-    if (isIOS) {
-      instructions = `To install Shade Seat:
-1. Tap the Share button (📤) at the bottom
-2. Scroll down and tap "Add to Home Screen" 
-3. Tap "Add" in the top right`;
-    } else if (isAndroid && isChrome) {
-      instructions = `To install Shade Seat:
-1. Tap the menu (⋮) in the top right  
-2. Tap "Add to Home screen" or "Install app"
-3. Tap "Install" to confirm`;
-    } else {
-      instructions = `To install Shade Seat:
-Look for the install icon in your browser's address bar or menu.`;
-    }
-    
-    alert(instructions);
-    setIsVisible(false);
   };
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem('pwa-prompt-dismissed', 'true');
-    
-    setTimeout(() => {
-      localStorage.removeItem('pwa-prompt-dismissed');
-    }, 30 * 24 * 60 * 60 * 1000);
+    // Don't use localStorage for dismissal - we use sessionStorage to control per session
   };
 
   // Don't show if already installed
