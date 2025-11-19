@@ -6,6 +6,22 @@ export function registerServiceWorker(): void {
         .register('/sw.js')
         .then((registration) => {
           console.log('SW registered:', registration);
+
+          // === 12-HOUR UPDATE CHECK ===
+          navigator.serviceWorker.ready.then(() => {
+            const lastCheck = localStorage.getItem('sw-last-update') || '0';
+            const now = Date.now();
+
+            // 12 hours = 12 * 60 * 60 * 1000 ms
+            if (now - Number(lastCheck) > 12 * 60 * 60 * 1000) {
+              if (registration.active) {
+                registration.active.postMessage({ type: 'CHECK_FOR_UPDATE' });
+                console.log('[SW] Triggered 12-hour cache update');
+                localStorage.setItem('sw-last-update', now.toString());
+              }
+            }
+          });
+
         })
         .catch((error) => {
           console.log('SW registration failed:', error);
@@ -32,7 +48,7 @@ export async function promptPWAInstall(): Promise<boolean> {
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
   deferredPrompt = null;
-  
+
   return outcome === 'accepted';
 }
 

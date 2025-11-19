@@ -66,3 +66,30 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// --- 12-HOUR UPDATE CHECK: Triggered by message from main page ---
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CHECK_FOR_UPDATE') {
+    console.log('[SW] Received update request');
+    event.waitUntil(updateCache());
+  }
+});
+
+// Update cache (STATIC_ASSETS only)
+async function updateCache() {
+  const cache = await caches.open(CACHE_NAME);
+
+  await Promise.all(
+    STATIC_ASSETS.map(async (url) => {
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (response.ok) {
+          await cache.put(url, response.clone());
+          console.log('[SW] Updated cache for', url);
+        }
+      } catch (err) {
+        console.warn('[SW] Failed to update', url, err);
+      }
+    })
+  );
+}
