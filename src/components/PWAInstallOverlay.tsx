@@ -21,7 +21,6 @@ export const PWAInstallOverlay = () => {
       const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
       const hasInstalled = localStorage.getItem('pwa-install-accepted');
       
-      // ONLY show overlay if PWA install is actually available
       if (!hasSeenPrompt && !hasInstalled) {
         setIsVisible(true);
       }
@@ -29,42 +28,44 @@ export const PWAInstallOverlay = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Remove the auto-show timer - only show when PWA is actually available
-    // This prevents showing instructions when install isn't possible
+    // Show overlay after delay - this ensures users see it even if beforeinstallprompt doesn't fire
+    const showTimer = setTimeout(() => {
+      const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
+      const hasInstalled = localStorage.getItem('pwa-install-accepted');
+      const isInstalled = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+      
+      if (!hasSeenPrompt && !hasInstalled && !isInstalled && !isVisible) {
+        console.log('🕒 Showing overlay via timer');
+        setIsVisible(true);
+      }
+    }, 3000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      clearTimeout(showTimer);
     };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      // This shouldn't happen if we only show the button when install is available
-      console.error('No install prompt available');
-      setIsVisible(false);
-      return;
-    }
-
-    try {
-      // Show the native install prompt
-      deferredPrompt.prompt();
-      
-      // Wait for the user to respond to the prompt
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('✅ User accepted the install prompt');
-        localStorage.setItem('pwa-install-accepted', 'true');
-      } else {
-        console.log('❌ User dismissed the install prompt');
+    if (deferredPrompt) {
+      // Direct PWA installation
+      try {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+          localStorage.setItem('pwa-install-accepted', 'true');
+        }
+        
+        setDeferredPrompt(null);
+        setIsVisible(false);
+        
+      } catch (error) {
+        console.error('Install error:', error);
+        setIsVisible(false);
       }
-      
-      // Clear the saved prompt since it can't be used again
-      setDeferredPrompt(null);
-      setIsVisible(false);
-      
-    } catch (error) {
-      console.error('Error during installation:', error);
+    } else {
+      // No deferred prompt - just close and let user use browser's native install
       setIsVisible(false);
     }
   };
@@ -83,10 +84,7 @@ export const PWAInstallOverlay = () => {
     return null;
   }
 
-  // ONLY show if we have a valid install prompt
-  if (!isVisible || !deferredPrompt) {
-    return null;
-  }
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
