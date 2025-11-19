@@ -7,122 +7,61 @@ export const PWAInstallOverlay = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [pwaSupported, setPwaSupported] = useState(false);
 
   useEffect(() => {
-    console.log('🔍 PWAInstallOverlay: Setting up event listeners');
-
     // Check device type
     const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     setIsMobile(mobileCheck);
-    console.log('📱 Device is mobile:', mobileCheck);
-
-    // Check PWA support
-    const checkPwaSupport = () => {
-      const manifest = document.querySelector('link[rel="manifest"]');
-      const checks = {
-        hasManifest: !!manifest,
-        hasServiceWorker: 'serviceWorker' in navigator,
-        isHTTPS: window.location.protocol === 'https:',
-        isLocalhost: window.location.hostname === 'localhost',
-        beforeInstallPrompt: 'BeforeInstallPromptEvent' in window
-      };
-      
-      console.log('🔍 PWA Support Check:', checks);
-      const supported = Object.values(checks).some(Boolean);
-      setPwaSupported(supported);
-      return supported;
-    };
-
-    checkPwaSupport();
 
     const handleBeforeInstallPrompt = (e: any) => {
-      console.log('🎉 BEFOREINSTALLPROMPT FIRED! Event:', e);
       e.preventDefault();
       setDeferredPrompt(e);
       
       const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
       const hasInstalled = localStorage.getItem('pwa-install-accepted');
       
-      console.log('📊 User state - Seen prompt:', hasSeenPrompt, 'Installed:', hasInstalled);
-      
       if (!hasSeenPrompt && !hasInstalled) {
-        console.log('🎯 Showing install overlay');
         setIsVisible(true);
-      } else {
-        console.log('🚫 Not showing overlay - user has dismissed or installed');
       }
     };
 
-    // Listen for the beforeinstallprompt event
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    console.log('👂 Added beforeinstallprompt listener');
 
-    // Check if already installed
-    const checkIfInstalled = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isIOSStandalone = (window.navigator as any).standalone;
+    // Show overlay after delay for user experience
+    const showTimer = setTimeout(() => {
+      const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
+      const hasInstalled = localStorage.getItem('pwa-install-accepted');
+      const isInstalled = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
       
-      console.log('📱 Install check - Standalone:', isStandalone, 'iOS Standalone:', isIOSStandalone);
-      
-      if (isStandalone || isIOSStandalone) {
-        console.log('✅ App is already installed');
-        setIsVisible(false);
-        return true;
+      if (!hasSeenPrompt && !hasInstalled && !isInstalled && !isVisible) {
+        setIsVisible(true);
       }
-      return false;
-    };
-
-    checkIfInstalled();
-
-    // Development: Always show after delay for testing
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🧪 Development mode - will show overlay after delay');
-      const timer = setTimeout(() => {
-        if (!checkIfInstalled() && !localStorage.getItem('pwa-prompt-dismissed')) {
-          console.log('⏰ Development timer - showing overlay');
-          setIsVisible(true);
-        }
-      }, 3000);
-      
-      return () => {
-        console.log('🧹 Cleaning up PWAInstallOverlay');
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        clearTimeout(timer);
-      };
-    }
+    }, 2000);
 
     return () => {
-      console.log('🧹 Cleaning up PWAInstallOverlay');
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      clearTimeout(showTimer);
     };
   }, []);
 
   const handleInstall = async () => {
-    console.log('🚀 Install button clicked');
-    
-    if (deferredPrompt) {
-      try {
-        console.log('📲 Prompting installation...');
-        deferredPrompt.prompt();
-        
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log('✅ User choice:', outcome);
-        
-        if (outcome === 'accepted') {
-          localStorage.setItem('pwa-install-accepted', 'true');
-          console.log('🎉 PWA install accepted');
-        }
-        
-        setDeferredPrompt(null);
-        setIsVisible(false);
-        
-      } catch (error) {
-        console.error('❌ Error during install prompt:', error);
-        showManualInstructions();
+    if (!deferredPrompt) {
+      showManualInstructions();
+      return;
+    }
+
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        localStorage.setItem('pwa-install-accepted', 'true');
       }
-    } else {
-      console.log('❌ No deferred prompt available');
+      
+      setDeferredPrompt(null);
+      setIsVisible(false);
+      
+    } catch (error) {
       showManualInstructions();
     }
   };
@@ -130,7 +69,6 @@ export const PWAInstallOverlay = () => {
   const showManualInstructions = () => {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
-    const isChrome = /Chrome/i.test(navigator.userAgent);
     
     let instructions = '';
     
@@ -139,16 +77,15 @@ export const PWAInstallOverlay = () => {
 1. Tap the Share button (📤) at the bottom
 2. Scroll down and tap "Add to Home Screen" 
 3. Tap "Add" in the top right`;
-    } else if (isAndroid && isChrome) {
-      instructions = `To install Shade Seat on Android Chrome:
+    } else if (isAndroid) {
+      instructions = `To install Shade Seat on Android:
 1. Tap the menu (⋮) in the top right  
 2. Tap "Add to Home screen" or "Install app"
 3. Tap "Install" to confirm`;
     } else {
-      instructions = `To install Shade Seat:
-- Look for the install icon in your browser's address bar
-- Or check browser menu for "Install" option
-- On desktop: Chrome shows a install icon (📥) in address bar`;
+      instructions = `To install Shade Seat on Desktop:
+- Look for the install icon (📥) in your browser's address bar
+- Or click the menu (⋮) and select "Install Shade Seat"`;
     }
     
     alert(instructions);
@@ -156,14 +93,12 @@ export const PWAInstallOverlay = () => {
   };
 
   const handleDismiss = () => {
-    console.log('❌ User dismissed install prompt');
     setIsVisible(false);
     localStorage.setItem('pwa-prompt-dismissed', 'true');
     
     setTimeout(() => {
       localStorage.removeItem('pwa-prompt-dismissed');
-      console.log('🔄 Install prompt reset');
-    }, 7 * 24 * 60 * 60 * 1000);
+    }, 30 * 24 * 60 * 60 * 1000); // 30 days
   };
 
   // Don't show if already installed
@@ -172,8 +107,6 @@ export const PWAInstallOverlay = () => {
   }
 
   if (!isVisible) return null;
-
-  console.log('🎪 Rendering PWA install overlay');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -215,17 +148,6 @@ export const PWAInstallOverlay = () => {
               : "Install for quick access and offline functionality"
             }
           </p>
-
-          {/* Debug info for development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center font-mono">
-                {isMobile ? '📱 Mobile' : '💻 Desktop'} | 
-                {deferredPrompt ? ' ✅ Install Ready' : ' ❌ No Prompt'} |
-                {pwaSupported ? ' ✅ PWA Supported' : ' ❌ PWA Issues'}
-              </p>
-            </div>
-          )}
 
           <div className="space-y-2 mb-6">
             <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-600">

@@ -4,8 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState } from "react";
-import { SettingsProvider } from "@/contexts/SettingsContext"; // Add this import
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import SplashScreen from "@/components/ui/SplashScreen";
+import { PWAInstallOverlay } from "@/components/PWAInstallOverlay";
 import Index from "./pages/Index";
 import Result from "./pages/Result";
 import HeadingSelect from "./pages/HeadingSelect";
@@ -22,7 +23,6 @@ const App = () => {
     setShowSplash(false);
   };
 
-  // Show splash on initial mount
   if (showSplash) {
     return (
       <SplashScreen 
@@ -32,26 +32,25 @@ const App = () => {
     );
   }
 
-  // Main app renders after splash - WRAP with SettingsProvider
   return (
     <QueryClientProvider client={queryClient}>
-      <SettingsProvider> {/* Add this wrapper */}
+      <SettingsProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <PWAInstallOverlay />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/result" element={<Result />} />
               <Route path="/heading-select" element={<HeadingSelect />} />
               <Route path="/route" element={<RouteMode />} />
               <Route path="/settings" element={<Settings />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </SettingsProvider> {/* Close SettingsProvider */}
+      </SettingsProvider>
     </QueryClientProvider>
   );
 };
