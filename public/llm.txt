@@ -1,0 +1,150 @@
+# Shade Safe Seat Advisor
+
+## Overview
+Shade Safe Seat Advisor is a mobile-first progressive web application that helps commuters choose which side of a vehicle to sit on to avoid direct sunlight during their journey.
+
+## Core Functionality
+
+### Seat Recommendation System
+The app provides real-time seat recommendations (left or right side) based on:
+- Current GPS location (latitude/longitude)
+- Device compass heading (bearing direction)
+- Current time of day
+- Sun position calculations using the SunCalc library
+
+### How It Works
+1. User requests their safe seat recommendation
+2. App obtains GPS coordinates via Geolocation API
+3. App detects vehicle heading using device compass (DeviceOrientationEvent)
+4. Calculates sun azimuth using SunCalc library
+5. Compares sun position with vehicle heading
+6. Recommends the side of the vehicle that avoids direct sunlight
+
+### Mathematical Logic
+```
+angle_difference = ((sun_azimuth - vehicle_heading + 540) % 360) - 180
+
+If angle_difference > 0: Sun is on the left → Recommend RIGHT seat
+If angle_difference < 0: Sun is on the right → Recommend LEFT seat
+```
+
+## Key Features
+
+### 1. Quick Check Mode
+- One-tap seat recommendation
+- Uses real-time GPS and compass
+- Instant visual feedback with vehicle diagram
+- Shows sun direction, vehicle heading, and coordinates
+
+### 2. Route Mode
+- Enter origin and destination addresses
+- Location autocomplete using OpenStreetMap Nominatim API
+- Calculates bearing between two points
+- Provides seat recommendation for the entire route
+
+### 3. Manual Heading Selection
+- Fallback for devices without compass support
+- User selects cardinal direction (North, East, South, West)
+- Converts to bearing degrees (0°, 90°, 180°, 270°)
+
+### 4. PWA Features
+- Installable as standalone app
+- Works offline with cached assets
+- Native app-like experience
+- Service worker for performance
+
+## Technical Stack
+
+### Frontend
+- React 18 with TypeScript
+- Vite build tool
+- React Router for navigation
+- TailwindCSS for styling
+
+### APIs & Libraries
+- SunCalc: Sun position calculations
+- Geolocation API: GPS coordinates
+- DeviceOrientation API: Compass heading
+- Nominatim API: Geocoding and location search
+
+### Browser APIs Used
+- navigator.geolocation: Location detection
+- DeviceOrientationEvent: Compass/magnetometer
+- Service Worker: PWA functionality
+
+## User Interface
+
+### Design System
+- Clean, light mode interface
+- Mobile-first responsive design
+- Semantic color tokens (HSL-based)
+- Smooth animations and transitions
+- Accessible components from shadcn/ui
+
+### Pages
+1. **Home (Index)**: Main entry point with "Find My Safe Seat" button
+2. **Result**: Displays recommendation with vehicle diagram
+3. **Route Mode**: Address-based route planning
+4. **Heading Select**: Manual direction selection fallback
+5. **Settings**: App preferences
+
+### Visual Components
+- Vehicle diagram showing left/right sides
+- Sun position indicator
+- Compass heading display
+- Interactive location autocomplete
+
+## Use Cases
+
+### Primary Users
+- Public transport commuters (bus, train, subway)
+- Rideshare passengers
+- Long-distance travelers
+- Anyone sensitive to direct sunlight
+
+### Common Scenarios
+- Morning/evening commutes with low sun angles
+- Long trips where sun exposure causes discomfort
+- Planning seating before boarding
+- Route planning to avoid sun throughout journey
+
+## Data & Privacy
+- No user data is stored or transmitted
+- No database required
+- All calculations performed client-side
+- GPS and compass permissions requested only when needed
+- External API calls: Only for geocoding (Nominatim)
+
+## Installation
+Available as a Progressive Web App (PWA):
+- Visit the web app in any modern browser
+- Install to home screen on mobile devices
+- Works offline after initial load
+- Automatic updates when online
+
+## Browser Compatibility
+- Modern browsers with Geolocation API support
+- Compass requires DeviceOrientation API (primarily mobile)
+- Desktop users can use manual heading selection
+- Graceful fallbacks for unsupported features
+
+## Performance
+- Lightweight bundle size
+- Fast load times with Vite
+- Lazy loading for route splitting
+- Optimized images and assets
+- Efficient re-renders with React
+
+## Future Enhancements
+- Multi-stop route support
+- Historical sun data visualization
+- Saved favorite routes
+- Public transit integration
+- Weather overlay
+- UV index warnings
+
+## Keywords
+sun protection, commute app, seat selection, sunlight avoidance, public transport, GPS navigation, compass app, sun position calculator, travel planning, mobile PWA, commuter tool, vehicle seating, azimuth calculation, bearing detection
+
+## Contact & Support
+Built for commuters who want a more comfortable journey by avoiding direct sunlight exposure.

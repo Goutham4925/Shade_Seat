@@ -7,23 +7,61 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
-    <title>Shade Safe Seat Advisor - Find Your Safe Seat</title>
-    <meta name="description" content="Avoid direct sunlight on your commute. Get real-time seat recommendations based on sun position and travel direction." />
+    <title>ShadeSafe Seat Advisor - Find Your Safe Seat</title>
+    <meta name="description" content="Smart seat selection app for commuters. Get real-time recommendations on which side of the vehicle to sit to avoid direct sunlight. Uses GPS, compass, and sun position calculations." />
+    <meta name="keywords" content="sun protection, commute app, seat advisor, sunlight avoidance, public transport, vehicle seating, sun position, GPS navigation, compass app, commuter tool" />
     <meta name="author" content="ShadeSafe" />
     <meta name="theme-color" content="#0EA5E9" />
+    <link rel="canonical" href="https://shadeseat.com/" />
 
-    <!-- Open Graph / Social -->
+    <!-- Link llm.txt for SEO / alternate resource -->
+    <link rel="alternate" type="text/plain" href="public/llm.txt" title="ShadeSafe App Documentation">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://shadeseat.com/" />
     <meta property="og:title" content="ShadeSafe Seat Advisor - Find Your Safe Seat" />
     <meta property="og:description" content="Avoid direct sunlight on your commute. Get real-time seat recommendations based on sun position and travel direction." />
-    <meta property="og:type" content="website" />
     <meta property="og:image" content="/sun-logo.png" />
+    <meta property="og:site_name" content="ShadeSafe Seat Advisor" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="ShadeSafe Seat Advisor" />
-    <meta name="twitter:description" content="Find the best seat to avoid direct sunlight" />
+    <meta name="twitter:url" content="https://shadeseat.com/" />
+    <meta name="twitter:title" content="ShadeSafe Seat Advisor - Find Your Safe Seat" />
+    <meta name="twitter:description" content="Smart seat selection tool that helps commuters avoid direct sunlight using GPS and sun position data" />
     <meta name="twitter:image" content="/sun-logo.png" />
 
+    <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MobileApplication",
+      "name": "ShadeSafe Seat Advisor",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any",
+      "description": "Smart seat selection app that helps commuters choose the best side of a vehicle to avoid direct sunlight based on GPS location, compass heading, and real-time sun position calculations.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Real-time sun position calculation",
+        "GPS-based location detection",
+        "Compass heading detection",
+        "Route-based recommendations",
+        "Manual direction selection",
+        "PWA installable app"
+      ],
+      "screenshot": "/sun-logo.png",
+      "about": "Public transport commuters, rideshare passengers, and long-distance travelers looking to avoid direct sunlight exposure."
+    }
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png">
@@ -40,9 +78,40 @@
 
   <body>
     <div id="root"></div>
+
+    <!-- Install Button -->
+    <div style="text-align:center; margin:20px;">
+      <button id="installBtn" style="padding:10px 20px; font-size:16px; color:white; background-color:#0EA5E9; border:none; border-radius:8px; cursor:pointer; display:none;">
+        Install ShadeSafe App
+      </button>
+    </div>
+
+
+
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Favicon cache-buster (optional) -->
+    <!-- PWA Install Prompt Script -->
+    <script>
+      let deferredPrompt;
+      const installBtn = document.getElementById('installBtn');
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'inline-block';
+      });
+
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('User response to install prompt:', outcome);
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+    </script>
+
+    <!-- Favicon cache-buster -->
     <script>
       setTimeout(() => {
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
