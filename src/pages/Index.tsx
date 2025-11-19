@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VehicleDiagram } from "@/components/VehicleDiagram";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
-import { PWAInstallOverlay } from "@/components/PWAInstallOverlay";
 import { Navigation, MapPin, Compass, Settings, Shield, Clock, Route, X, Lightbulb, Car, Moon, Download, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { HeadingDetector } from "@/lib/headingDetector";
@@ -12,28 +11,46 @@ import Lottie from "lottie-react";
 import littleSunAnimation from "@/animations/little sun.json";
 import { useSettings } from "@/contexts/SettingsContext";
 
-// PWA Install Overlay Component (you can move this to a separate file later)
+// PWA Install Overlay Component
 const PWAInstallOverlay = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
+      console.log('🔔 BeforeInstallPrompt event fired!');
       e.preventDefault();
       setDeferredPrompt(e);
       
       // Check if we should show the overlay
       const hasSeenPrompt = localStorage.getItem('pwa-prompt-dismissed');
-      if (!hasSeenPrompt) {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      console.log('📱 Is mobile:', isMobile);
+      console.log('👀 Has seen prompt:', hasSeenPrompt);
+      
+      // Show on mobile or if we're testing
+      if (!hasSeenPrompt && (isMobile || process.env.NODE_ENV === 'development')) {
+        console.log('🎯 Showing install overlay');
         setIsVisible(true);
       }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Check if app is already installed
+    // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('📱 App is already installed');
       setIsVisible(false);
+    }
+
+    // For testing: show after 3 seconds in development
+    if (process.env.NODE_ENV === 'development') {
+      const timer = setTimeout(() => {
+        console.log('⏰ Development timer - showing overlay');
+        setIsVisible(true);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -42,40 +59,47 @@ const PWAInstallOverlay = () => {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
+    console.log('🚀 Install button clicked');
+    if (!deferredPrompt) {
+      console.log('❌ No deferred prompt available');
+      return;
+    }
 
     try {
+      console.log('📲 Prompting installation...');
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+      console.log('✅ User choice:', outcome);
       
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
         localStorage.setItem('pwa-install-accepted', 'true');
       }
       
       setDeferredPrompt(null);
       setIsVisible(false);
     } catch (error) {
-      console.error('Error installing PWA:', error);
+      console.error('❌ Error installing PWA:', error);
     }
   };
 
   const handleDismiss = () => {
+    console.log('❌ User dismissed install prompt');
     setIsVisible(false);
     localStorage.setItem('pwa-prompt-dismissed', 'true');
     
-    // Show again after 30 days
+    // Show again after 7 days for testing
     setTimeout(() => {
       localStorage.removeItem('pwa-prompt-dismissed');
-    }, 30 * 24 * 60 * 60 * 1000);
+    }, 7 * 24 * 60 * 60 * 1000);
   };
 
   if (!isVisible) return null;
 
+  console.log('🎪 Rendering PWA install overlay');
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <Card className="relative max-w-md w-full mx-auto overflow-hidden shadow-2xl border-0 bg-gradient-to-br from-blue-50 to-amber-50/50 dark:from-gray-800 dark:to-gray-900 rounded-3xl">
-        {/* Close Button */}
         <Button
           variant="ghost"
           size="sm"
@@ -86,7 +110,6 @@ const PWAInstallOverlay = () => {
         </Button>
 
         <div className="p-6 text-center">
-          {/* App Icon */}
           <div className="flex justify-center mb-4">
             <div className="relative">
               <img 
@@ -100,7 +123,6 @@ const PWAInstallOverlay = () => {
             </div>
           </div>
 
-          {/* Content */}
           <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
             Install Shade Seat
           </h2>
@@ -113,7 +135,6 @@ const PWAInstallOverlay = () => {
             Install Shade Seat for quick access, offline functionality, and an optimized mobile experience.
           </p>
 
-          {/* Features */}
           <div className="space-y-2 mb-6">
             <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-600">
               <Smartphone className="w-5 h-5 text-blue-500" />
@@ -132,7 +153,6 @@ const PWAInstallOverlay = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="space-y-3">
             <Button
               onClick={handleInstall}
