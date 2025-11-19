@@ -8,9 +8,33 @@ export interface SunPosition {
 export interface SeatRecommendation {
   sunAzimuth: number;
   heading: number;
-  sunPosition: 'LEFT' | 'RIGHT';
-  recommendedSide: 'LEFT' | 'RIGHT';
+  sunPosition: 'LEFT' | 'RIGHT' | 'NIGHT';
+  recommendedSide: 'LEFT' | 'RIGHT' | 'ANY';
   angleDifference: number;
+  isDaytime: boolean;
+  message: string;
+  isNight: boolean;
+}
+
+/**
+ * Check if it's nighttime (after sunset or before sunrise)
+ */
+export function isNighttime(lat: number, lon: number, date: Date = new Date()): boolean {
+  const times = SunCalc.getTimes(date, lat, lon);
+  const currentTime = date.getTime();
+  
+  const sunrise = times.sunrise.getTime();
+  const sunset = times.sunset.getTime();
+  
+  // If current time is before sunrise or after sunset, it's nighttime
+  return currentTime < sunrise || currentTime > sunset;
+}
+
+/**
+ * Check if it's daytime (between sunrise and sunset)
+ */
+export function isDaytime(lat: number, lon: number, date: Date = new Date()): boolean {
+  return !isNighttime(lat, lon, date);
 }
 
 /**
@@ -35,6 +59,7 @@ export function getSunPosition(lat: number, lon: number, date: Date = new Date()
 
 /**
  * Calculate which side of the vehicle the sun is on and recommend a seat
+ * Now handles nighttime scenarios
  */
 export function calculateSeatRecommendation(
   lat: number,
@@ -42,6 +67,21 @@ export function calculateSeatRecommendation(
   heading: number,
   date: Date = new Date()
 ): SeatRecommendation {
+  const isNight = isNighttime(lat, lon, date);
+  
+  if (isNight) {
+    return {
+      sunAzimuth: 0,
+      heading,
+      sunPosition: 'NIGHT',
+      recommendedSide: 'ANY',
+      angleDifference: 0,
+      isDaytime: false,
+      isNight: true,
+      message: "It's currently nighttime - sun position doesn't matter. You can choose any seat comfortably."
+    };
+  }
+  
   const sunPos = getSunPosition(lat, lon, date);
   
   // Calculate the difference between sun azimuth and vehicle heading
@@ -61,6 +101,9 @@ export function calculateSeatRecommendation(
     sunPosition,
     recommendedSide,
     angleDifference: Math.abs(diff),
+    isDaytime: true,
+    isNight: false,
+    message: `Sun is on the ${sunPosition.toLowerCase()} side. Recommended seat: ${recommendedSide.toLowerCase()} side to avoid direct sunlight.`
   };
 }
 
@@ -113,7 +156,7 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; lo
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
       {
         headers: {
-          'User-Agent': 'SunSafe-Seat-Advisor',
+          'User-Agent': 'ShadeSafe-Seat-Advisor',
         },
       }
     );

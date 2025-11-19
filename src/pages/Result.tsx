@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { VehicleDiagram } from "@/components/VehicleDiagram";
-import { ArrowLeft, MapPin, Compass, Sun, Navigation, Shield, Clock, Route, Target } from "lucide-react";
+import { ArrowLeft, MapPin, Compass, Sun, Navigation, Shield, Clock, Route, Target, Moon, Stars } from "lucide-react";
 import { calculateSeatRecommendation, degreesToCardinal } from "@/lib/sunCalculator";
 import type { SeatRecommendation } from "@/lib/sunCalculator";
 
@@ -28,6 +28,37 @@ const Result = () => {
     setCalculationTime(new Date().toLocaleTimeString());
   }, [latitude, longitude, heading, navigate]);
 
+  // Helper function to get display configuration based on recommendation
+  const getDisplayConfig = (rec: SeatRecommendation) => {
+    if (rec.isNight) {
+      return {
+        title: "Nighttime Travel",
+        subtitle: "Sun position doesn't matter",
+        mainColor: "from-purple-600 to-indigo-600",
+        badgeColor: "from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20",
+        borderColor: "border-purple-200 dark:border-purple-800",
+        icon: "🌙",
+        seatColor: "bg-purple-500",
+        gradientColor: "from-purple-100 dark:from-purple-900/20",
+        timeIcon: Moon,
+        message: "It's currently nighttime - you can choose any seat comfortably"
+      };
+    }
+
+    return {
+      title: "Analysis Complete",
+      subtitle: "Your Optimal Seat Found",
+      mainColor: "from-emerald-600 to-green-600",
+      badgeColor: "from-orange-50 to-green-50 dark:from-orange-900/20 dark:to-green-900/20",
+      borderColor: "border-orange-200 dark:border-orange-800",
+      icon: rec.recommendedSide === 'LEFT' ? '🫲' : '🫱',
+      seatColor: "bg-orange-500",
+      gradientColor: "from-orange-100 dark:from-orange-900/20",
+      timeIcon: Sun,
+      message: `Sun is on the ${rec.sunPosition.toLowerCase()} side - sit on ${rec.recommendedSide.toLowerCase()} to avoid direct sunlight`
+    };
+  };
+
   if (!recommendation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50/30 dark:from-blue-950/30 dark:via-gray-900 dark:to-amber-950/20 flex items-center justify-center">
@@ -45,6 +76,8 @@ const Result = () => {
     );
   }
 
+  const displayConfig = getDisplayConfig(recommendation);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50/30 dark:from-blue-950/30 dark:via-gray-900 dark:to-amber-950/20 py-8 px-4 relative">
       <div className="max-w-md mx-auto">
@@ -59,44 +92,57 @@ const Result = () => {
             Back to Home
           </Button>
 
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-3">
-            Analysis Complete
+          <h1 className={`text-4xl font-bold bg-gradient-to-r ${displayConfig.mainColor} bg-clip-text text-transparent mb-3`}>
+            {displayConfig.title}
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-1">
-            Your Optimal Seat Found
+            {displayConfig.subtitle}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500 max-w-xs mx-auto leading-relaxed">
-            Based on real-time sun position and travel direction
+            {recommendation.isNight 
+              ? "Enjoy comfortable seating without sun concerns" 
+              : "Based on real-time sun position and travel direction"
+            }
           </p>
         </div>
 
         {/* Enhanced Recommendation Card */}
         <Card className="relative overflow-hidden shadow-2xl border-0 bg-white dark:bg-gray-800 rounded-3xl p-8 mb-6 animate-slide-up">
           {/* Background Decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-emerald-100 dark:from-emerald-900/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+          <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-l ${displayConfig.gradientColor} to-transparent rounded-full -translate-y-16 translate-x-16`}></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-100 dark:from-blue-900/20 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
           
           <div className="relative z-10 text-center">
             {/* Recommendation Badge */}
-            <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl border-2 border-emerald-200 dark:border-emerald-800 shadow-sm mb-6">
+            <div className={`inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r ${displayConfig.badgeColor} rounded-2xl border-2 ${displayConfig.borderColor} shadow-sm mb-6`}>
               <div className="text-3xl">
-                {recommendation.recommendedSide === 'LEFT' ? '🫲' : '🫱'}
+                {recommendation.isNight ? '🌙' : displayConfig.icon}
               </div>
               <div>
-                <div className="font-bold text-emerald-900 dark:text-emerald-100 text-sm uppercase tracking-wide">
-                  Recommended Seat
+                <div className="font-bold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide">
+                  {recommendation.isNight ? "Nighttime Mode" : "Recommended Seat"}
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {recommendation.recommendedSide === 'LEFT' ? 'Left Side' : 'Right Side'}
+                  {recommendation.isNight 
+                    ? "Any Seat" 
+                    : recommendation.recommendedSide === 'LEFT' ? 'Left Side' : 'Right Side'
+                  }
                 </div>
               </div>
             </div>
 
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-              Sit on the <span className="text-emerald-600 dark:text-emerald-400">{recommendation.recommendedSide.toLowerCase()}</span> side
+              {recommendation.isNight ? (
+                <>Choose <span className="text-purple-600 dark:text-purple-400">any seat</span> comfortably</>
+              ) : (
+                <>Sit on the <span className="text-orange-600 dark:text-orange-400">{recommendation.recommendedSide.toLowerCase()}</span> side</>
+              )}
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              To avoid direct sunlight during your journey
+              {recommendation.isNight 
+                ? "No direct sunlight concerns during nighttime travel" 
+                : "To avoid direct sunlight during your journey"
+              }
             </p>
 
             {/* Enhanced Vehicle Visualization */}
@@ -104,21 +150,29 @@ const Result = () => {
               <div className="relative w-full h-32">
                 {/* Vehicle Body */}
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 rounded-2xl border-2 border-gray-300 dark:border-gray-600 shadow-lg">
-                  {/* Windows */}
-                  <div className="absolute top-2 left-3 right-3 h-3 bg-blue-200/60 dark:bg-blue-400/20 rounded-t-lg border border-blue-300/50 dark:border-blue-400/30"></div>
+                  {/* Windows with nighttime style */}
+                  <div className={`absolute top-2 left-3 right-3 h-3 rounded-t-lg border ${
+                    recommendation.isNight 
+                      ? 'bg-purple-200/40 dark:bg-purple-400/10 border-purple-300/30 dark:border-purple-400/20' 
+                      : 'bg-blue-200/60 dark:bg-blue-400/20 border-blue-300/50 dark:border-blue-400/30'
+                  }`}></div>
                   
                   {/* Seats with Recommendation Highlight */}
                   <div className={`absolute top-8 left-4 w-7 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                    recommendation.recommendedSide === 'LEFT' 
-                      ? 'bg-emerald-500 text-white shadow-md scale-110' 
-                      : 'bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-300'
+                    recommendation.isNight 
+                      ? 'bg-purple-500 text-white shadow-md scale-105' 
+                      : recommendation.recommendedSide === 'LEFT' 
+                        ? `${displayConfig.seatColor} text-white shadow-md scale-110` 
+                        : 'bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-300'
                   }`}>
                     <span className="text-xs font-bold">L</span>
                   </div>
                   <div className={`absolute top-8 right-4 w-7 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                    recommendation.recommendedSide === 'RIGHT' 
-                      ? 'bg-emerald-500 text-white shadow-md scale-110' 
-                      : 'bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-300'
+                    recommendation.isNight 
+                      ? 'bg-purple-500 text-white shadow-md scale-105' 
+                      : recommendation.recommendedSide === 'RIGHT' 
+                        ? `${displayConfig.seatColor} text-white shadow-md scale-110` 
+                        : 'bg-gray-300 dark:bg-gray-500 text-gray-700 dark:text-gray-300'
                   }`}>
                     <span className="text-xs font-bold">R</span>
                   </div>
@@ -149,6 +203,15 @@ const Result = () => {
                     <span>Forward</span>
                   </div>
                 </div>
+
+                {/* Nighttime Stars */}
+                {recommendation.isNight && (
+                  <>
+                    <div className="absolute top-4 left-8 w-1 h-1 bg-yellow-200 rounded-full animate-pulse"></div>
+                    <div className="absolute top-6 right-10 w-1 h-1 bg-yellow-200 rounded-full animate-pulse delay-300"></div>
+                    <div className="absolute top-10 left-12 w-1 h-1 bg-yellow-200 rounded-full animate-pulse delay-700"></div>
+                  </>
+                )}
               </div>
 
               {/* Seat Legend */}
@@ -158,8 +221,12 @@ const Result = () => {
                   <span className="text-xs text-gray-600 dark:text-gray-400">Available</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-emerald-500 rounded"></div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400">Recommended</span>
+                  <div className={`w-4 h-4 rounded ${
+                    recommendation.isNight ? 'bg-purple-500' : displayConfig.seatColor
+                  }`}></div>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    {recommendation.isNight ? "Recommended" : "Recommended"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -169,20 +236,36 @@ const Result = () => {
         {/* Enhanced Details Card */}
         <Card className="relative overflow-hidden shadow-2xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl p-6 mb-6 animate-fade-in-up">
           {/* Background Decoration */}
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-l from-blue-100 dark:from-blue-900/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
+          <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-l ${
+            recommendation.isNight 
+              ? 'from-purple-100 dark:from-purple-900/20' 
+              : 'from-blue-100 dark:from-blue-900/20'
+          } to-transparent rounded-full -translate-y-10 translate-x-10`}></div>
           
           <div className="relative z-10">
             <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-400">
-                <Navigation className="w-5 h-5" />
+              <div className={`flex items-center justify-center w-10 h-10 rounded-xl ${
+                recommendation.isNight 
+                  ? 'bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-400' 
+                  : 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-400'
+              }`}>
+                {recommendation.isNight ? <Stars className="w-5 h-5" /> : <Navigation className="w-5 h-5" />}
               </div>
-              <span>Calculation Details</span>
+              <span>{recommendation.isNight ? "Nighttime Analysis" : "Calculation Details"}</span>
             </h3>
             
             <div className="space-y-4">
               {/* Vehicle Direction */}
-              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 transition-all hover:bg-blue-100 dark:hover:bg-blue-900/30 group">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+              <div className={`flex items-center gap-4 p-4 bg-gradient-to-r rounded-2xl border transition-all hover:scale-[1.02] group ${
+                recommendation.isNight
+                  ? 'from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-100 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                  : 'from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+              }`}>
+                <div className={`flex items-center justify-center w-12 h-12 rounded-xl group-hover:scale-110 transition-transform ${
+                  recommendation.isNight
+                    ? 'bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-400'
+                    : 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-400'
+                }`}>
                   <Compass className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
@@ -193,21 +276,41 @@ const Result = () => {
                 </div>
               </div>
 
-              {/* Sun Direction */}
-              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-100 dark:border-amber-800 transition-all hover:bg-amber-100 dark:hover:bg-amber-900/30 group">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
-                  <Sun className="w-6 h-6" />
+              {/* Sun Direction - Only show for daytime */}
+              {!recommendation.isNight && (
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-100 dark:border-amber-800 transition-all hover:scale-[1.02] hover:bg-amber-100 dark:hover:bg-amber-900/30 group">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+                    <Sun className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sun Direction</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      {Math.round(recommendation.sunAzimuth)}° {degreesToCardinal(recommendation.sunAzimuth)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sun Direction</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {Math.round(recommendation.sunAzimuth)}° {degreesToCardinal(recommendation.sunAzimuth)}
-                  </p>
+              )}
+
+              {/* Nighttime Info - Show for nighttime */}
+              {recommendation.isNight && (
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl border border-purple-100 dark:border-purple-800 transition-all hover:scale-[1.02] hover:bg-purple-100 dark:hover:bg-purple-900/30 group">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                    <Moon className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Time</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      Nighttime
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      No direct sunlight concerns
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Location */}
-              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 transition-all hover:bg-gray-100 dark:hover:bg-gray-700/80 group">
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 transition-all hover:scale-[1.02] hover:bg-gray-100 dark:hover:bg-gray-700/80 group">
                 <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 group-hover:scale-110 transition-transform">
                   <MapPin className="w-6 h-6" />
                 </div>
@@ -225,6 +328,7 @@ const Result = () => {
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                 <Clock className="w-4 h-4" />
                 <span>Calculated at {calculationTime}</span>
+                {recommendation.isNight && <Moon className="w-4 h-4" />}
               </div>
             </div>
           </div>
@@ -238,7 +342,11 @@ const Result = () => {
             onMouseLeave={() => setIsHovered(false)}
             className="w-full h-14 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group border-0"
           >
-            <div className={`absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500 ${
+            <div className={`absolute inset-0 bg-gradient-to-r ${
+              recommendation.isNight 
+                ? 'from-purple-500 to-indigo-500' 
+                : 'from-blue-500 to-cyan-500'
+            } transition-all duration-500 ${
               isHovered ? 'scale-105 brightness-110' : 'scale-100'
             }`}></div>
             
@@ -264,10 +372,16 @@ const Result = () => {
         {/* Enhanced Status Footer */}
         <div className="mt-8 text-center animate-fade-in-up">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow border border-gray-100 dark:border-gray-700">
-            <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+            <div className={`w-3 h-3 rounded-full animate-pulse ${
+              recommendation.isNight ? 'bg-purple-500' : 'bg-orange-500'
+            }`}></div>
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Optimal Seat Found</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Enjoy your sun-free journey!</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {recommendation.isNight ? "Nighttime Mode Active" : "Optimal Seat Found"}
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                {recommendation.isNight ? "No sun concerns - enjoy your journey!" : "Enjoy your sun-free journey!"}
+              </p>
             </div>
           </div>
         </div>

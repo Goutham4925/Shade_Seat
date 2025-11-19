@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Navigation, MapPin, Loader2, Route, Target, Clock, Shield, Compass, Sun } from "lucide-react";
+import { ArrowLeft, Navigation, MapPin, Loader2, Route, Target, Clock, Shield, Compass, Sun, Calendar, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/contexts/SettingsContext";
 
@@ -16,26 +16,20 @@ interface LocationSuggestion {
 }
 
 interface SeatRecommendation {
-  side: 'left' | 'right';
+  side: 'left' | 'right' | 'any';
   reason: string;
   bearing: number;
   sunPosition: string;
+  isNighttime: boolean;
   [key: string]: any;
 }
-
-// Define possible recommendation types
-type RecommendationResult = 
-  | string 
-  | { recommendedSide: string; reason?: string; sunAzimuth?: number }
-  | { side: string; reason?: string; sunPosition?: string }
-  | { recommendedSeat: string; description?: string }
-  | any;
 
 const RouteMode = () => {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
+  const [selectedDateTime, setSelectedDateTime] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [originSuggestions, setOriginSuggestions] = useState<LocationSuggestion[]>([]);
   const [destSuggestions, setDestSuggestions] = useState<LocationSuggestion[]>([]);
@@ -47,6 +41,14 @@ const RouteMode = () => {
   const destTimeoutRef = useRef<NodeJS.Timeout>();
   const originDropdownRef = useRef<HTMLDivElement>(null);
   const destDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Set default datetime to current time when component mounts
+  useEffect(() => {
+    const now = new Date();
+    // Format for datetime-local input: YYYY-MM-DDTHH:MM
+    const formattedDateTime = now.toISOString().slice(0, 16);
+    setSelectedDateTime(formattedDateTime);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,62 +98,43 @@ const RouteMode = () => {
       // Calculate initial bearing from origin to destination
       const bearing = calculateBearing(originCoords.lat, originCoords.lon, destCoords.lat, destCoords.lon);
 
-      // Calculate seat recommendation
-      const recommendation: RecommendationResult = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing);
+      // Use selected datetime or current time
+      let travelDate: Date;
+      if (selectedDateTime) {
+        travelDate = new Date(selectedDateTime + ':00'); // Add seconds to make it valid
+        
+        if (isNaN(travelDate.getTime())) {
+          toast.error("Invalid date/time selected");
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        travelDate = new Date();
+      }
 
-      // ✅ FIXED: Properly handle the recommendation data structure with type safety
-      let recommendedSide: 'left' | 'right';
+      // Calculate seat recommendation with specific time
+      const recommendation = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing, travelDate);
+
+      // Handle the recommendation based on your sunCalculator interface
+      let recommendedSide: 'left' | 'right' | 'any';
       let reason: string;
       let sunPosition: string;
+      let isNighttimeResult: boolean;
 
-      // Debug log to see what calculateSeatRecommendation actually returns
-      console.log('Raw recommendation from calculator:', recommendation);
-      console.log('Type of recommendation:', typeof recommendation);
-
-      // Handle different possible return structures from calculateSeatRecommendation
-      if (typeof recommendation === 'string') {
-        // If it returns a simple string like "left" or "right"
-        const sideStr = recommendation.toLowerCase();
-        recommendedSide = sideStr.includes('left') ? 'left' : 'right';
-        reason = `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
-        sunPosition = `Travel direction: ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
-      } else if (recommendation && typeof recommendation === 'object') {
-        // If it returns an object - safely check each possible property
-        
-        // Check for recommendedSide property
-        if (recommendation.recommendedSide && typeof recommendation.recommendedSide === 'string') {
-          const sideStr = recommendation.recommendedSide.toLowerCase();
-          recommendedSide = sideStr.includes('left') ? 'left' : 'right';
-        } 
-        // Check for side property
-        else if (recommendation.side && typeof recommendation.side === 'string') {
-          const sideStr = recommendation.side.toLowerCase();
-          recommendedSide = sideStr.includes('left') ? 'left' : 'right';
-        }
-        // Check for recommendedSeat property
-        else if (recommendation.recommendedSeat && typeof recommendation.recommendedSeat === 'string') {
-          const sideStr = recommendation.recommendedSeat.toLowerCase();
-          recommendedSide = sideStr.includes('left') ? 'left' : 'right';
-        } else {
-          // Fallback if no recognizable side property found
-          console.warn('No recognizable side property found in recommendation, using bearing-based fallback');
-          recommendedSide = bearing >= 0 && bearing < 180 ? 'left' : 'right';
-        }
-
-        // Set reason and sunPosition with proper type checking
-        reason = (typeof recommendation.reason === 'string' ? recommendation.reason : 
-                 typeof recommendation.description === 'string' ? recommendation.description :
-                 `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`);
-
-        sunPosition = (typeof recommendation.sunPosition === 'string' ? recommendation.sunPosition :
-                      typeof recommendation.sunAzimuth === 'number' ? `Sun is at ${recommendation.sunAzimuth.toFixed(1)}°` :
-                      `Travel direction: ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`);
+      if (recommendation.isNight) {
+        // Nighttime scenario
+        recommendedSide = 'any';
+        reason = recommendation.message || "It's nighttime - sun position doesn't matter. You can choose any seat comfortably.";
+        sunPosition = "Nighttime - Sun below horizon";
+        isNighttimeResult = true;
+        toast.success("Nighttime travel detected - any seat is comfortable!");
       } else {
-        // Final fallback - use bearing to determine side
-        console.warn('Unexpected recommendation type, using bearing-based calculation');
-        recommendedSide = bearing >= 0 && bearing < 180 ? 'left' : 'right';
-        reason = `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
-        sunPosition = `Direction: ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)})`;
+        // Daytime scenario
+        const sideStr = recommendation.recommendedSide.toLowerCase();
+        recommendedSide = sideStr as 'left' | 'right';
+        reason = recommendation.message || `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)}) at ${travelDate.toLocaleTimeString()}`;
+        sunPosition = `Sun is on the ${recommendation.sunPosition.toLowerCase()} side (${recommendation.sunAzimuth.toFixed(1)}°)`;
+        isNighttimeResult = false;
       }
 
       // Create consistent recommendation object
@@ -159,10 +142,9 @@ const RouteMode = () => {
         side: recommendedSide,
         reason: reason,
         bearing: bearing,
-        sunPosition: sunPosition
+        sunPosition: sunPosition,
+        isNighttime: isNighttimeResult
       };
-
-      console.log('Final recommendation object:', fullRecommendation);
 
       // Navigate back to home page with the full recommendation data
       navigate('/', {
@@ -172,7 +154,9 @@ const RouteMode = () => {
           bearing: bearing,
           mode: 'route',
           origin: origin,
-          destination: destination
+          destination: destination,
+          travelTime: travelDate.toLocaleString(),
+          isNighttime: isNighttimeResult
         }
       });
     } catch (error) {
@@ -294,6 +278,24 @@ const RouteMode = () => {
     );
   };
 
+  // Fixed function to set current date and time
+  const handleSetCurrentDateTime = () => {
+    const now = new Date();
+    // Convert to local datetime string in the correct format for datetime-local input
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    setSelectedDateTime(localDateTime);
+    
+    // Show current time info
+    const timeInfo = now.getHours() >= 18 || now.getHours() < 6 ? 'night' : 'day';
+    toast.success(`Current ${timeInfo}time set (${hours}:${minutes})`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50/30 dark:from-blue-950/30 dark:via-gray-900 dark:to-amber-950/20 py-8 px-4 relative">
       <div className="max-w-md mx-auto">
@@ -315,7 +317,7 @@ const RouteMode = () => {
             Plan Your Journey
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500 max-w-xs mx-auto leading-relaxed">
-            Get seat recommendations based on your entire route direction
+            Get seat recommendations based on your entire route direction and travel time
           </p>
         </div>
 
@@ -432,6 +434,53 @@ const RouteMode = () => {
                 </div>
               </div>
 
+              {/* Time Selection */}
+              <div className="space-y-3">
+                {/* Label */}
+                <Label
+                  htmlFor="travel-time"
+                  className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  Travel Date & Time
+                </Label>
+
+                {/* Input wrapper */}
+                <div className="relative flex items-center gap-2">
+                  {/* Clock icon */}
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                    <Clock className="w-5 h-5 text-gray-400 dark:text-gray-300" />
+                  </div>
+
+                  {/* DateTime Input */}
+                  <Input
+                    id="travel-time"
+                    type="datetime-local"
+                    value={selectedDateTime}
+                    onChange={(e) => setSelectedDateTime(e.target.value)}
+                    className="pl-12 pr-4 h-14 rounded-2xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/30 transition-all shadow-inner w-full"
+                  />
+
+                  {/* Current time button */}
+                  <Button
+                    type="button"
+                    onClick={handleSetCurrentDateTime}
+                    variant="outline"
+                    className="ml-2 px-4 py-2 h-10 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-medium text-sm transition-colors shadow-md border-0"
+                  >
+                    Now
+                  </Button>
+                </div>
+
+                {/* Helper text */}
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Select when you plan to travel for accurate sun position calculations. 
+                  For nighttime travel, any seat is comfortable as the sun won't be a factor.
+                </p>
+              </div>
+
               {/* Enhanced Submit Button */}
               <Button
                 type="submit"
@@ -485,23 +534,37 @@ const RouteMode = () => {
                 </div>
               </div>
               
-              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-100 dark:border-green-800 transition-all hover:bg-green-100 dark:hover:bg-green-900/30 group">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-400 font-bold text-lg group-hover:scale-110 transition-transform">
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl border border-purple-100 dark:border-purple-800 transition-all hover:bg-purple-100 dark:hover:bg-purple-900/30 group">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-400 font-bold text-lg group-hover:scale-110 transition-transform">
                   2
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Direction Analysis</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">We calculate your initial travel bearing</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">Select Travel Time</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Choose when you'll be traveling</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-100 dark:border-green-800 transition-all hover:bg-green-100 dark:hover:bg-green-900/30 group">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-400 font-bold text-lg group-hover:scale-110 transition-transform">
+                  3
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white">Smart Analysis</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    We check if it's daytime or nighttime at your travel time
+                  </p>
                 </div>
               </div>
               
               <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-100 dark:border-amber-800 transition-all hover:bg-amber-100 dark:hover:bg-amber-900/30 group">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 font-bold text-lg group-hover:scale-110 transition-transform">
-                  3
+                  4
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Smart Recommendations</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Get seat advice based on sun position</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">Personalized Recommendation</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Daytime: optimal seat to avoid sun • Nighttime: any seat is fine
+                  </p>
                 </div>
               </div>
             </div>
@@ -512,12 +575,12 @@ const RouteMode = () => {
         <div className="text-center animate-fade-in-up">
           <div className="inline-flex items-start gap-4 px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 max-w-sm">
             <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 flex-shrink-0">
-              💡
+              <Moon className="w-6 h-6" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">Pro Tip</p>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">Night Travel</p>
               <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                For real-time recommendations, use the quick check mode with live location and compass
+                When traveling at night, the sun won't be a factor. You can comfortably choose any seat without worrying about sunlight.
               </p>
             </div>
           </div>
@@ -529,7 +592,7 @@ const RouteMode = () => {
             <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Ready to Calculate</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Enter your route to get started</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Enter your route and travel time to get started</p>
             </div>
           </div>
         </div>
