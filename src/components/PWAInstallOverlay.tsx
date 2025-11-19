@@ -45,10 +45,7 @@ export const PWAInstallOverlay = () => {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      showManualInstructions();
-      return;
-    }
+    if (!deferredPrompt) return;
 
     try {
       deferredPrompt.prompt();
@@ -62,34 +59,9 @@ export const PWAInstallOverlay = () => {
       setIsVisible(false);
       
     } catch (error) {
-      showManualInstructions();
+      // Silent fail - just close the overlay
+      setIsVisible(false);
     }
-  };
-
-  const showManualInstructions = () => {
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isAndroid = /Android/i.test(navigator.userAgent);
-    
-    let instructions = '';
-    
-    if (isIOS) {
-      instructions = `To install Shade Seat on iOS:
-1. Tap the Share button (📤) at the bottom
-2. Scroll down and tap "Add to Home Screen" 
-3. Tap "Add" in the top right`;
-    } else if (isAndroid) {
-      instructions = `To install Shade Seat on Android:
-1. Tap the menu (⋮) in the top right  
-2. Tap "Add to Home screen" or "Install app"
-3. Tap "Install" to confirm`;
-    } else {
-      instructions = `To install Shade Seat on Desktop:
-- Look for the install icon (📥) in your browser's address bar
-- Or click the menu (⋮) and select "Install Shade Seat"`;
-    }
-    
-    alert(instructions);
-    setIsVisible(false);
   };
 
   const handleDismiss = () => {
@@ -98,7 +70,7 @@ export const PWAInstallOverlay = () => {
     
     setTimeout(() => {
       localStorage.removeItem('pwa-prompt-dismissed');
-    }, 30 * 24 * 60 * 60 * 1000); // 30 days
+    }, 30 * 24 * 60 * 60 * 1000);
   };
 
   // Don't show if already installed
@@ -121,17 +93,13 @@ export const PWAInstallOverlay = () => {
         </Button>
 
         <div className="p-6 text-center">
+          {/* Simplified Logo - No container, no shadow */}
           <div className="flex justify-center mb-4">
-            <div className="relative">
-              <img 
-                src="/logo.png" 
-                alt="Shade Seat Logo" 
-                className="w-16 h-16 object-contain rounded-2xl shadow-lg"
-              />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
-                <Download className="w-3 h-3 text-white" />
-              </div>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Shade Seat Logo" 
+              className="w-16 h-16 object-contain"
+            />
           </div>
 
           <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
@@ -190,13 +158,7 @@ export const PWAInstallOverlay = () => {
               </div>
             </Button>
 
-            <Button
-              onClick={showManualInstructions}
-              variant="outline"
-              className="w-full border-blue-300 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-            >
-              Show Instructions
-            </Button>
+            {/* Removed Instructions Button */}
 
             <Button
               variant="ghost"
