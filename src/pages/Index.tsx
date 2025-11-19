@@ -221,6 +221,14 @@ const Index = () => {
       <div className="max-w-md mx-auto">
         {/* Premium Header */}
         <div className="text-center mb-8 animate-fade-in-up">
+          {/* Logo Image */}
+          <div className="flex justify-center mb-3">
+            <img 
+              src="/logo.png" 
+              alt="Shade Seat Logo" 
+              className="h-12 w-auto object-contain" // Adjust height as needed
+            />
+          </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3">
             Shade Seat
           </h1>
