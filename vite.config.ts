@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { readFileSync } from "fs";
-import { sitemap } from "vite-plugin-sitemap"; 
+import sitemap from "vite-plugin-sitemap";
 
 // Function to get commit hash from build-info.json
 const getCommitHash = () => {
