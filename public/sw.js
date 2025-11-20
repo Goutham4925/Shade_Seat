@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
 
 // Install event – pre-cache core assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing for commit:', CURRENT_COMMIT);
+  // console.log('[SW] Installing for commit:', CURRENT_COMMIT);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(STATIC_ASSETS))
@@ -30,7 +30,7 @@ self.addEventListener('activate', (event) => {
         Promise.all(
           cacheNames.map((name) => {
             if (name !== CACHE_NAME) {
-              console.log('[SW] Deleting old cache:', name);
+              // console.log('[SW] Deleting old cache:', name);
               return caches.delete(name);
             }
           })
@@ -117,7 +117,7 @@ function fetchWithDynamicCaching(event) {
 // --- COMMIT-BASED VERSION CHECKING ---
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CHECK_FOR_UPDATE') {
-    console.log('[SW] Received update request');
+    // console.log('[SW] Received update request');
     event.waitUntil(checkForUpdates());
   }
 });
@@ -137,7 +137,7 @@ async function checkCommitVersion() {
     const buildInfo = await response.json();
     
     if (buildInfo.commit !== CURRENT_COMMIT && CURRENT_COMMIT !== '{{COMMIT_HASH}}') {
-      console.log('[SW] New commit detected, clearing cache. Old:', CURRENT_COMMIT, 'New:', buildInfo.commit);
+      // console.log('[SW] New commit detected, clearing cache. Old:', CURRENT_COMMIT, 'New:', buildInfo.commit);
       await clearAllCaches();
       // Notify clients to reload
       self.clients.matchAll().then((clients) => {
@@ -154,7 +154,7 @@ async function checkCommitVersion() {
     console.log('[SW] Commit matches:', CURRENT_COMMIT);
     return false; // Same version
   } catch (error) {
-    console.log('[SW] Build info check failed, using cached version');
+    // console.log('[SW] Build info check failed, using cached version');
     return false;
   }
 }
@@ -186,7 +186,7 @@ async function updateCache() {
         });
         if (response.ok) {
           await cache.put(url, response);
-          console.log('[SW] Updated cache for', url);
+          // console.log('[SW] Updated cache for', url);
         }
       } catch (err) {
         console.warn('[SW] Failed to update', url, err);
@@ -201,5 +201,5 @@ async function clearAllCaches() {
   await Promise.all(
     cacheNames.map(cacheName => caches.delete(cacheName))
   );
-  console.log('[SW] All caches cleared due to new commit');
+  // console.log('[SW] All caches cleared due to new commit');
 }

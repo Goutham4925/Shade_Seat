@@ -36,14 +36,14 @@ const PWAInstallOverlay = () => {
         beforeInstallPrompt: 'BeforeInstallPromptEvent' in window
       };
       
-      console.log('🔍 PWA Support Check:', checks);
+      // console.log('🔍 PWA Support Check:', checks);
       return Object.values(checks).some(Boolean);
     };
 
     setPwaSupported(checkPwaSupport());
 
     const handleBeforeInstallPrompt = (e: any) => {
-      console.log('🎉 BEFOREINSTALLPROMPT FIRED - PWA install available!');
+      // console.log('🎉 BEFOREINSTALLPROMPT FIRED - PWA install available!');
       e.preventDefault();
       setDeferredPrompt(e);
       
@@ -54,7 +54,7 @@ const PWAInstallOverlay = () => {
       
       // On mobile, wait for user interaction before showing prompt
       if (mobileCheck) {
-        console.log('📱 Mobile detected - storing prompt for later');
+        // console.log('📱 Mobile detected - storing prompt for later');
         // Don't auto-show on mobile, wait for user action
       } else {
         // On desktop, show immediately
@@ -67,7 +67,7 @@ const PWAInstallOverlay = () => {
       const hasInstalled = localStorage.getItem('pwa-install-accepted');
       
       if (!hasSeenPrompt && !hasInstalled) {
-        console.log('🎯 Showing install overlay');
+        // console.log('🎯 Showing install overlay');
         setIsVisible(true);
       }
     };
@@ -77,7 +77,7 @@ const PWAInstallOverlay = () => {
     // For mobile Chrome, we need to trigger after user interaction
     const handleUserInteraction = () => {
       if (deferredPrompt && mobileCheck && !isVisible) {
-        console.log('👆 User interaction detected - showing install prompt');
+        // console.log('👆 User interaction detected - showing install prompt');
         showOverlay();
       }
     };
@@ -90,7 +90,7 @@ const PWAInstallOverlay = () => {
     if (process.env.NODE_ENV === 'development') {
       setTimeout(() => {
         if (!isVisible && !localStorage.getItem('pwa-prompt-dismissed')) {
-          console.log('🧪 Development mode - showing overlay');
+          // console.log('🧪 Development mode - showing overlay');
           setIsVisible(true);
         }
       }, 3000);
@@ -104,7 +104,7 @@ const PWAInstallOverlay = () => {
   }, [deferredPrompt, isVisible, trackEvent]);
 
   const handleInstall = async () => {
-    console.log('🚀 Install button clicked');
+    // console.log('🚀 Install button clicked');
     
     trackEvent(AppEvents.PWA_INSTALL_ACCEPTED, {
       is_mobile: isMobile,
@@ -113,15 +113,15 @@ const PWAInstallOverlay = () => {
     
     if (deferredPrompt) {
       try {
-        console.log('📲 Prompting installation...');
+        // console.log('📲 Prompting installation...');
         deferredPrompt.prompt();
         
         const { outcome } = await deferredPrompt.userChoice;
-        console.log('✅ User choice:', outcome);
+        // console.log('✅ User choice:', outcome);
         
         if (outcome === 'accepted') {
           localStorage.setItem('pwa-install-accepted', 'true');
-          console.log('🎉 PWA install accepted');
+          // console.log('🎉 PWA install accepted');
         }
         
         setDeferredPrompt(null);
@@ -132,7 +132,7 @@ const PWAInstallOverlay = () => {
         showManualInstructions();
       }
     } else {
-      console.log('📋 No deferred prompt, showing manual instructions');
+      // console.log('📋 No deferred prompt, showing manual instructions');
       showManualInstructions();
     }
   };
@@ -171,7 +171,7 @@ Look for the install option in your browser menu, usually under:
   };
 
   const handleDismiss = () => {
-    console.log('❌ User dismissed install prompt');
+    // console.log('❌ User dismissed install prompt');
     trackEvent(AppEvents.PWA_INSTALL_DISMISSED);
     setIsVisible(false);
     localStorage.setItem('pwa-prompt-dismissed', 'true');
@@ -184,7 +184,7 @@ Look for the install option in your browser menu, usually under:
 
   // Don't show if app is already installed
   if (window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('📱 App already installed in standalone mode');
+    // console.log('📱 App already installed in standalone mode');
     return null;
   }
 
