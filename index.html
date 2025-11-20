@@ -6,26 +6,49 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
     <title>Shade Seat Advisor - Find Your Safe Seat</title>
-    <!-- ... your other meta tags unchanged ... -->
+
+    <!-- SEO Meta Description -->
+    <meta name="description" content="Shade Seat Advisor helps you find the safest seat on your route using real-time sunlight analysis, route direction, and travel conditions. Get smarter seat recommendations instantly.">
+
+    <!-- ============================= -->
+    <!-- 🚀 OPEN GRAPH (WhatsApp, FB) -->
+    <!-- ============================= -->
+    <meta property="og:title" content="Shade Seat Advisor - Find Your Safe Seat" />
+    <meta property="og:description" content="Find the safest and coolest seat during your travel with real-time sunlight and direction analysis." />
+    <meta property="og:image" content="https://shadeseat.com/logo.png" />
+    <meta property="og:image:alt" content="Shade Seat Advisor Logo" />
+    <meta property="og:url" content="https://shadeseat.com" />
+    <meta property="og:type" content="website" />
+
+    <!-- WhatsApp requires a minimum of 300x200 -->
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- ============================= -->
+    <!-- 🐦 TWITTER CARD -->
+    <!-- ============================= -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Shade Seat Advisor - Find Your Safe Seat" />
+    <meta name="twitter:description" content="Find the safest and coolest seat during your travel with real-time sunlight and direction analysis." />
+    <meta name="twitter:image" content="https://shadeseat.com/logo.png" />
 
     <!-- Google Tag Manager -->
     <script>
-    (function(w,d,s,l,i){
-      w[l]=w[l]||[];
-      w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
-      var f=d.getElementsByTagName(s)[0],
-      j=d.createElement(s), dl=l!='dataLayer'?'&l='+l:'';
-      j.async=true;
-      j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
-      f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-NBB9LMBJ');
+      (function(w,d,s,l,i){
+        w[l]=w[l]||[];
+        w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+        var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s), dl=l!='dataLayer'?'&l='+l:'';
+        j.async=true;
+        j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+        f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-NBB9LMBJ');
     </script>
     <!-- End Google Tag Manager -->
-
-    <!-- NOTE: GA4 gtag.js removed intentionally.
-         Use GTM to inject GA4 config and to route all events to GA4. -->
   </head>
+
   <body>
     <!-- GTM (noscript) -->
     <noscript>
@@ -33,6 +56,7 @@
       height="0" width="0" style="display:none;visibility:hidden"></iframe>
     </noscript>
     <!-- End GTM -->
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
