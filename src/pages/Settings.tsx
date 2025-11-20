@@ -7,14 +7,23 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Settings as SettingsIcon, Info, Compass, Navigation, Sun, Shield, MapPin, Route, Moon, Smartphone, Battery, Eye, Download, Upload, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useEventTracker } from "@/hooks/useGoogleAnalytics";
+import { AppEvents } from "@/lib/analytics";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { settings, updateSettings } = useSettings();
   const [isHovered, setIsHovered] = useState(false);
+  const trackEvent = useEventTracker();
 
   const handleSettingChange = (key: keyof typeof settings, value: boolean) => {
     updateSettings({ [key]: value });
+    
+    trackEvent(AppEvents.SETTINGS_CHANGED, {
+      setting_key: key,
+      setting_value: value,
+    });
+    
     toast.success("Setting updated!", {
       description: "Your preference has been saved automatically.",
     });
@@ -32,6 +41,12 @@ const Settings = () => {
     };
 
     updateSettings(defaultSettings);
+    
+    trackEvent('settings_reset', {
+      previous_settings: settings,
+      new_settings: defaultSettings,
+    });
+    
     toast.success("Settings reset to defaults!", {
       description: "All preferences have been restored to factory settings.",
     });
@@ -48,10 +63,18 @@ const Settings = () => {
       a.download = 'sunsafe-settings.json';
       a.click();
       URL.revokeObjectURL(url);
+      
+      trackEvent('settings_exported', {
+        settings_count: Object.keys(settings).length,
+      });
+      
       toast.success("Settings exported successfully!", {
         description: "Your settings have been downloaded as a JSON file.",
       });
     } catch (error) {
+      trackEvent('settings_export_error', {
+        error: error.message,
+      });
       toast.error("Failed to export settings", {
         description: "Please try again.",
       });
@@ -85,10 +108,19 @@ const Settings = () => {
         }
 
         updateSettings(filteredSettings);
+        
+        trackEvent('settings_imported', {
+          imported_settings_count: Object.keys(filteredSettings).length,
+          settings: filteredSettings,
+        });
+        
         toast.success("Settings imported successfully!", {
           description: "Your preferences have been updated.",
         });
       } catch (error) {
+        trackEvent('settings_import_error', {
+          error: error.message,
+        });
         toast.error("Invalid settings file", {
           description: "Please check the file format and try again.",
         });
@@ -108,6 +140,8 @@ const Settings = () => {
       return;
     }
 
+    trackEvent('location_permission_check_requested');
+
     navigator.permissions.query({ name: 'geolocation' as PermissionName })
       .then((result) => {
         const status = result.state;
@@ -125,9 +159,14 @@ const Settings = () => {
             break;
         }
 
+        trackEvent('location_permission_status', {
+          status,
+        });
+
         toast.info(`Location permission: ${status}`, { description });
       })
       .catch(() => {
+        trackEvent('location_permission_check_error');
         toast.info("Location permission status unavailable", {
           description: "Cannot determine location access status.",
         });

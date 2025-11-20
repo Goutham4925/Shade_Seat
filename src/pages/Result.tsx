@@ -6,6 +6,8 @@ import { VehicleDiagram } from "@/components/VehicleDiagram";
 import { ArrowLeft, MapPin, Compass, Sun, Navigation, Shield, Clock, Route, Target, Moon, Stars } from "lucide-react";
 import { calculateSeatRecommendation, degreesToCardinal } from "@/lib/sunCalculator";
 import type { SeatRecommendation } from "@/lib/sunCalculator";
+import { useEventTracker } from "@/hooks/useGoogleAnalytics";
+import { AppEvents } from "@/lib/analytics";
 
 const Result = () => {
   const location = useLocation();
@@ -13,6 +15,7 @@ const Result = () => {
   const [recommendation, setRecommendation] = useState<SeatRecommendation | null>(null);
   const [calculationTime, setCalculationTime] = useState<string>("");
   const [isHovered, setIsHovered] = useState(false);
+  const trackEvent = useEventTracker();
 
   const { latitude, longitude, heading } = location.state || {};
 
@@ -23,10 +26,27 @@ const Result = () => {
     }
 
     // Calculate recommendation
+    const startTime = performance.now();
     const result = calculateSeatRecommendation(latitude, longitude, heading);
+    const endTime = performance.now();
+    const calculationDuration = endTime - startTime;
+
     setRecommendation(result);
     setCalculationTime(new Date().toLocaleTimeString());
-  }, [latitude, longitude, heading, navigate]);
+
+    // Track calculation completion
+    trackEvent(AppEvents.SEAT_RECOMMENDATION_CALCULATED, {
+      latitude,
+      longitude,
+      heading,
+      recommended_side: result.recommendedSide,
+      is_night: result.isNight,
+      sun_azimuth: result.sunAzimuth,
+      calculation_duration_ms: Math.round(calculationDuration),
+      timestamp: new Date().toISOString(),
+    });
+
+  }, [latitude, longitude, heading, navigate, trackEvent]);
 
   // Helper function to get display configuration based on recommendation
   const getDisplayConfig = (rec: SeatRecommendation) => {
@@ -57,6 +77,22 @@ const Result = () => {
       timeIcon: Sun,
       message: `Sun is on the ${rec.sunPosition.toLowerCase()} side - sit on ${rec.recommendedSide.toLowerCase()} to avoid direct sunlight`
     };
+  };
+
+  const handleCheckAnotherLocation = () => {
+    trackEvent('check_another_location_clicked', {
+      current_recommendation: recommendation?.recommendedSide,
+      is_night: recommendation?.isNight,
+    });
+    navigate('/');
+  };
+
+  const handleTryRouteMode = () => {
+    trackEvent('try_route_mode_from_result', {
+      current_recommendation: recommendation?.recommendedSide,
+      is_night: recommendation?.isNight,
+    });
+    navigate('/route');
   };
 
   if (!recommendation) {
@@ -337,7 +373,7 @@ const Result = () => {
         {/* Enhanced Action Buttons */}
         <div className="space-y-4 animate-fade-in-up">
           <Button 
-            onClick={() => navigate('/')}
+            onClick={handleCheckAnotherLocation}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className="w-full h-14 text-lg font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group border-0"
@@ -360,7 +396,7 @@ const Result = () => {
           </Button>
 
           <Button 
-            onClick={() => navigate('/route')}
+            onClick={handleTryRouteMode}
             variant="outline"
             className="w-full h-12 rounded-2xl border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm transition-all group"
           >

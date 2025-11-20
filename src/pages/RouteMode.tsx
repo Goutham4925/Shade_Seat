@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Navigation, MapPin, Loader2, Route, Target, Clock, Shield, Compass, Sun, Calendar, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useEventTracker } from "@/hooks/useGoogleAnalytics";
+import { AppEvents } from "@/lib/analytics";
 
 interface LocationSuggestion {
   display_name: string;
@@ -41,6 +43,7 @@ const RouteMode = () => {
   const destTimeoutRef = useRef<NodeJS.Timeout>();
   const originDropdownRef = useRef<HTMLDivElement>(null);
   const destDropdownRef = useRef<HTMLDivElement>(null);
+  const trackEvent = useEventTracker();
 
   // Set default datetime to current time when component mounts
   useEffect(() => {
@@ -59,6 +62,14 @@ const RouteMode = () => {
     }
 
     setIsLoading(true);
+    const startTime = performance.now();
+
+    trackEvent(AppEvents.ROUTE_CALCULATION_STARTED, {
+      origin,
+      destination,
+      selected_datetime: selectedDateTime,
+      high_accuracy: settings.highAccuracy,
+    });
 
     try {
       const { geocodeAddress, calculateBearing, calculateSeatRecommendation, degreesToCardinal } = await import("@/lib/sunCalculator");
@@ -70,14 +81,23 @@ const RouteMode = () => {
         originCoords = { lat: parseFloat(originMatch[1]), lon: parseFloat(originMatch[2]) };
       } else {
         toast.info("Geocoding origin address...");
+        trackEvent(AppEvents.GEOCODING_REQUESTED, { address: origin, type: 'origin' });
         originCoords = await geocodeAddress(origin);
       }
 
       if (!originCoords) {
+        trackEvent(AppEvents.GEOCODING_ERROR, { address: origin, type: 'origin' });
         toast.error("Could not find origin location");
         setIsLoading(false);
         return;
       }
+
+      trackEvent(AppEvents.GEOCODING_SUCCESS, { 
+        address: origin, 
+        type: 'origin',
+        latitude: originCoords.lat,
+        longitude: originCoords.lon,
+      });
 
       // Parse or geocode destination
       let destCoords: { lat: number; lon: number } | null = null;
@@ -86,14 +106,23 @@ const RouteMode = () => {
         destCoords = { lat: parseFloat(destMatch[1]), lon: parseFloat(destMatch[2]) };
       } else {
         toast.info("Geocoding destination address...");
+        trackEvent(AppEvents.GEOCODING_REQUESTED, { address: destination, type: 'destination' });
         destCoords = await geocodeAddress(destination);
       }
 
       if (!destCoords) {
+        trackEvent(AppEvents.GEOCODING_ERROR, { address: destination, type: 'destination' });
         toast.error("Could not find destination location");
         setIsLoading(false);
         return;
       }
+
+      trackEvent(AppEvents.GEOCODING_SUCCESS, { 
+        address: destination, 
+        type: 'destination',
+        latitude: destCoords.lat,
+        longitude: destCoords.lon,
+      });
 
       // Calculate initial bearing from origin to destination
       const bearing = calculateBearing(originCoords.lat, originCoords.lon, destCoords.lat, destCoords.lon);
@@ -111,6 +140,12 @@ const RouteMode = () => {
       } else {
         travelDate = new Date();
       }
+
+      trackEvent(AppEvents.TRAVEL_TIME_SELECTED, {
+        selected_datetime: selectedDateTime,
+        actual_datetime: travelDate.toISOString(),
+        is_current_time: !selectedDateTime,
+      });
 
       // Calculate seat recommendation with specific time
       const recommendation = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing, travelDate);
@@ -146,6 +181,22 @@ const RouteMode = () => {
         isNighttime: isNighttimeResult
       };
 
+      const endTime = performance.now();
+      const calculationDuration = endTime - startTime;
+
+      // Track successful calculation
+      trackEvent(AppEvents.ROUTE_CALCULATION_COMPLETED, {
+        origin_lat: originCoords.lat,
+        origin_lon: originCoords.lon,
+        dest_lat: destCoords.lat,
+        dest_lon: destCoords.lon,
+        bearing,
+        recommended_side: recommendedSide,
+        is_nighttime: isNighttimeResult,
+        calculation_duration_ms: Math.round(calculationDuration),
+        travel_datetime: travelDate.toISOString(),
+      });
+
       // Navigate back to home page with the full recommendation data
       navigate('/', {
         state: {
@@ -161,6 +212,15 @@ const RouteMode = () => {
       });
     } catch (error) {
       console.error('Route calculation error:', error);
+      const endTime = performance.now();
+      const calculationDuration = endTime - startTime;
+      
+      trackEvent(AppEvents.ROUTE_CALCULATION_ERROR, {
+        error: error.message,
+        calculation_duration_ms: Math.round(calculationDuration),
+        origin,
+        destination,
+      });
       toast.error("Could not calculate route");
       setIsLoading(false);
     }
@@ -189,6 +249,11 @@ const RouteMode = () => {
     }
 
     setIsSearching(true);
+    trackEvent('location_search_triggered', {
+      query,
+      is_origin: isOrigin,
+    });
+
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
@@ -208,9 +273,20 @@ const RouteMode = () => {
           setDestSuggestions(data);
           setShowDestDropdown(true);
         }
+
+        trackEvent('location_search_success', {
+          query,
+          is_origin: isOrigin,
+          result_count: data.length,
+        });
       }
     } catch (error) {
       console.error('Location search error:', error);
+      trackEvent('location_search_error', {
+        query,
+        is_origin: isOrigin,
+        error: error.message,
+      });
     } finally {
       setIsSearching(false);
     }
@@ -244,12 +320,26 @@ const RouteMode = () => {
     setOrigin(suggestion.display_name);
     setShowOriginDropdown(false);
     setOriginSuggestions([]);
+    
+    trackEvent('location_suggestion_selected', {
+      type: 'origin',
+      display_name: suggestion.display_name,
+      latitude: suggestion.lat,
+      longitude: suggestion.lon,
+    });
   };
 
   const selectDestSuggestion = (suggestion: LocationSuggestion) => {
     setDestination(suggestion.display_name);
     setShowDestDropdown(false);
     setDestSuggestions([]);
+    
+    trackEvent('location_suggestion_selected', {
+      type: 'destination',
+      display_name: suggestion.display_name,
+      latitude: suggestion.lat,
+      longitude: suggestion.lon,
+    });
   };
 
   const handleUseCurrentLocation = () => {
@@ -258,15 +348,28 @@ const RouteMode = () => {
       return;
     }
 
+    trackEvent('current_location_requested', { context: 'route_mode_origin' });
+
     setIsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setOrigin(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        trackEvent('current_location_success', {
+          latitude,
+          longitude,
+          accuracy: position.coords.accuracy,
+          context: 'route_mode_origin',
+        });
         toast.success("Current location set as origin");
         setIsLoading(false);
       },
       (error) => {
+        trackEvent('current_location_error', {
+          error_code: error.code,
+          error_message: error.message,
+          context: 'route_mode_origin',
+        });
         toast.error("Could not get current location");
         setIsLoading(false);
       },
@@ -290,6 +393,12 @@ const RouteMode = () => {
     
     const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
     setSelectedDateTime(localDateTime);
+    
+    trackEvent(AppEvents.CURRENT_TIME_USED, {
+      hours,
+      minutes,
+      is_nighttime: now.getHours() >= 18 || now.getHours() < 6,
+    });
     
     // Show current time info
     const timeInfo = now.getHours() >= 18 || now.getHours() < 6 ? 'night' : 'day';

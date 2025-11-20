@@ -10,6 +10,8 @@ import { HeadingDetector } from "@/lib/headingDetector";
 import Lottie from "lottie-react";
 import littleSunAnimation from "@/animations/little sun.json";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useEventTracker } from "@/hooks/useGoogleAnalytics";
+import { AppEvents } from "@/lib/analytics";
 
 // PWA Install Overlay Component - Mobile Optimized
 const PWAInstallOverlay = () => {
@@ -17,6 +19,7 @@ const PWAInstallOverlay = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [pwaSupported, setPwaSupported] = useState(false);
+  const trackEvent = useEventTracker();
 
   useEffect(() => {
     // Check device type
@@ -43,6 +46,11 @@ const PWAInstallOverlay = () => {
       console.log('🎉 BEFOREINSTALLPROMPT FIRED - PWA install available!');
       e.preventDefault();
       setDeferredPrompt(e);
+      
+      trackEvent(AppEvents.PWA_INSTALL_PROMPT, {
+        is_mobile: mobileCheck,
+        user_agent: navigator.userAgent,
+      });
       
       // On mobile, wait for user interaction before showing prompt
       if (mobileCheck) {
@@ -93,10 +101,15 @@ const PWAInstallOverlay = () => {
       document.removeEventListener('click', handleUserInteraction);
       document.removeEventListener('touchstart', handleUserInteraction);
     };
-  }, [deferredPrompt, isVisible]);
+  }, [deferredPrompt, isVisible, trackEvent]);
 
   const handleInstall = async () => {
     console.log('🚀 Install button clicked');
+    
+    trackEvent(AppEvents.PWA_INSTALL_ACCEPTED, {
+      is_mobile: isMobile,
+      has_deferred_prompt: !!deferredPrompt,
+    });
     
     if (deferredPrompt) {
       try {
@@ -159,6 +172,7 @@ Look for the install option in your browser menu, usually under:
 
   const handleDismiss = () => {
     console.log('❌ User dismissed install prompt');
+    trackEvent(AppEvents.PWA_INSTALL_DISMISSED);
     setIsVisible(false);
     localStorage.setItem('pwa-prompt-dismissed', 'true');
     
@@ -301,6 +315,7 @@ const Index = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [routeRecommendation, setRouteRecommendation] = useState<any>(null);
   const [animationData, setAnimationData] = useState<any>(null);
+  const trackEvent = useEventTracker();
 
   // Load Lottie animation data
   useEffect(() => {
@@ -320,6 +335,14 @@ const Index = () => {
     if (location.state?.recommendation) {
       setRouteRecommendation(location.state);
       const isNight = location.state.recommendation?.isNighttime || location.state.isNighttime;
+      
+      trackEvent(AppEvents.ROUTE_CALCULATION_COMPLETED, {
+        is_nighttime: isNight,
+        recommendation_side: location.state.recommendation?.side,
+        origin: location.state.origin,
+        destination: location.state.destination,
+      });
+      
       if (isNight) {
         toast.success("🌙 Nighttime travel detected - any seat is comfortable!");
       } else {
@@ -327,10 +350,14 @@ const Index = () => {
       }
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, trackEvent]);
 
   const handleCheckSafeSide = async () => {
     setSafeSeatLoading(true);
+    trackEvent(AppEvents.SEAT_RECOMMENDATION_REQUESTED, {
+      mode: 'current_location',
+      has_route_recommendation: !!routeRecommendation,
+    });
 
     try {
       if (!navigator.geolocation) {
@@ -338,6 +365,8 @@ const Index = () => {
         setSafeSeatLoading(false);
         return;
       }
+
+      trackEvent(AppEvents.LOCATION_PERMISSION_REQUESTED);
 
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -348,17 +377,29 @@ const Index = () => {
       });
 
       const { latitude, longitude } = position.coords;
+      
+      trackEvent(AppEvents.LOCATION_DETECTED, {
+        latitude,
+        longitude,
+        accuracy: position.coords.accuracy,
+        high_accuracy: settings.highAccuracy,
+      });
 
       if (!settings.autoHeading || !HeadingDetector.isSupported()) {
+        trackEvent(AppEvents.MANUAL_MODE_SELECTED, {
+          reason: settings.autoHeading ? 'compass_not_supported' : 'auto_heading_disabled',
+        });
         navigate('/heading-select', { 
           state: { latitude, longitude }
         });
         return;
       }
 
+      trackEvent(AppEvents.COMPASS_PERMISSION_REQUESTED);
       const permissionGranted = await HeadingDetector.requestPermission();
       
       if (!permissionGranted) {
+        trackEvent(AppEvents.COMPASS_PERMISSION_DENIED);
         toast.error("Compass permission denied");
         navigate('/heading-select', { 
           state: { latitude, longitude }
@@ -366,12 +407,16 @@ const Index = () => {
         return;
       }
 
+      trackEvent(AppEvents.COMPASS_PERMISSION_GRANTED);
       const detector = new HeadingDetector();
       let headingObtained = false;
 
       const timeout = setTimeout(() => {
         if (!headingObtained) {
           detector.stopListening();
+          trackEvent(AppEvents.COMPASS_ERROR, {
+            error_type: 'timeout',
+          });
           toast.error("Could not get compass reading");
           navigate('/heading-select', { 
             state: { latitude, longitude }
@@ -385,6 +430,11 @@ const Index = () => {
           clearTimeout(timeout);
           detector.stopListening();
 
+          trackEvent(AppEvents.COMPASS_DETECTED, {
+            heading: headingData.heading,
+            accuracy: headingData.accuracy,
+          });
+
           navigate('/result', {
             state: {
               latitude,
@@ -397,6 +447,11 @@ const Index = () => {
 
     } catch (error: any) {
       console.error('Error:', error);
+      
+      trackEvent(AppEvents.LOCATION_ERROR, {
+        error_code: error.code,
+        error_message: error.message,
+      });
       
       if (error.code === 1) {
         toast.error("Location permission denied. Please enable location access in your browser settings.");
@@ -412,12 +467,17 @@ const Index = () => {
 
   const handleRouteMode = async () => {
     setRouteModeLoading(true);
+    trackEvent(AppEvents.ROUTE_MODE_SELECTED);
     
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       navigate('/route');
     } catch (error) {
       console.error('Error:', error);
+      trackEvent(AppEvents.NAVIGATION_ERROR, {
+        destination: '/route',
+        error: error.message,
+      });
       toast.error("Could not load route mode");
     } finally {
       setRouteModeLoading(false);
@@ -426,12 +486,17 @@ const Index = () => {
 
   const handleSettings = async () => {
     setSettingsLoading(true);
+    trackEvent(AppEvents.SETTINGS_OPENED);
     
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       navigate('/settings');
     } catch (error) {
       console.error('Error:', error);
+      trackEvent(AppEvents.NAVIGATION_ERROR, {
+        destination: '/settings',
+        error: error.message,
+      });
       toast.error("Could not load settings");
     } finally {
       setSettingsLoading(false);
@@ -439,6 +504,7 @@ const Index = () => {
   };
 
   const clearRouteRecommendation = () => {
+    trackEvent('route_recommendation_cleared');
     setRouteRecommendation(null);
   };
 
