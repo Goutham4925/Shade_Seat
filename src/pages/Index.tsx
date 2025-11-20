@@ -506,6 +506,7 @@ const Index = () => {
   const clearRouteRecommendation = () => {
     trackEvent('route_recommendation_cleared');
     setRouteRecommendation(null);
+     navigate('/', { replace: true, state: {} });
   };
 
   const getRecommendationSide = (): 'left' | 'right' | 'any' | null => {
