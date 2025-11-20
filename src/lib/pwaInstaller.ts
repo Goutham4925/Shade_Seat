@@ -7,18 +7,12 @@ export function registerServiceWorker(): void {
         .then((registration) => {
           console.log('SW registered:', registration);
 
-          // === 12-HOUR UPDATE CHECK ===
+          // === ALWAYS CHECK FOR UPDATES ON LOAD ===
           navigator.serviceWorker.ready.then(() => {
-            const lastCheck = localStorage.getItem('sw-last-update') || '0';
-            const now = Date.now();
-
-            // 12 hours = 12 * 60 * 60 * 1000 ms
-            if (now - Number(lastCheck) > 12 * 60 * 60 * 1000) {
-              if (registration.active) {
-                registration.active.postMessage({ type: 'CHECK_FOR_UPDATE' });
-                console.log('[SW] Triggered 12-hour cache update');
-                localStorage.setItem('sw-last-update', now.toString());
-              }
+            if (registration.active) {
+              // Check for updates immediately on every page load
+              registration.active.postMessage({ type: 'CHECK_FOR_UPDATE' });
+              console.log('[SW] Triggered update check on page load');
             }
           });
 

@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import SplashScreen from "@/components/ui/SplashScreen";
 import { PWAInstallOverlay } from "@/components/PWAInstallOverlay";
@@ -22,6 +22,26 @@ const App = () => {
   const handleSplashFinish = () => {
     setShowSplash(false);
   };
+
+  // Listen for new version notifications from service worker
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'NEW_VERSION_AVAILABLE') {
+        console.log('New version available:', event.data.commit);
+        // Service worker will automatically handle cache clearing
+      }
+    };
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleMessage);
+    }
+
+    return () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      }
+    };
+  }, []);
 
   if (showSplash) {
     return (
