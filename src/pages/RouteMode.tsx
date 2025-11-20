@@ -1,3 +1,4 @@
+// RouteMode.tsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,7 @@ const RouteMode = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!origin || !destination) {
       toast.error("Please enter both origin and destination");
       return;
@@ -72,8 +73,9 @@ const RouteMode = () => {
     });
 
     try {
-      const { geocodeAddress, calculateBearing, calculateSeatRecommendation, degreesToCardinal } = await import("@/lib/sunCalculator");
-      
+      // dynamic import to keep parity with your previous pattern
+      const { geocodeAddress, calculateBearing, calculateSeatRecommendation, degreesToCardinal, getShadeSideForRoute } = await import("@/lib/sunCalculator");
+
       // Parse or geocode origin
       let originCoords: { lat: number; lon: number } | null = null;
       const originMatch = origin.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
@@ -92,8 +94,8 @@ const RouteMode = () => {
         return;
       }
 
-      trackEvent(AppEvents.GEOCODING_SUCCESS, { 
-        address: origin, 
+      trackEvent(AppEvents.GEOCODING_SUCCESS, {
+        address: origin,
         type: 'origin',
         latitude: originCoords.lat,
         longitude: originCoords.lon,
@@ -117,21 +119,21 @@ const RouteMode = () => {
         return;
       }
 
-      trackEvent(AppEvents.GEOCODING_SUCCESS, { 
-        address: destination, 
+      trackEvent(AppEvents.GEOCODING_SUCCESS, {
+        address: destination,
         type: 'destination',
         latitude: destCoords.lat,
         longitude: destCoords.lon,
       });
 
-      // Calculate initial bearing from origin to destination
+      // Calculate initial bearing from origin to destination (kept for UI reason)
       const bearing = calculateBearing(originCoords.lat, originCoords.lon, destCoords.lat, destCoords.lon);
 
       // Use selected datetime or current time
       let travelDate: Date;
       if (selectedDateTime) {
-        travelDate = new Date(selectedDateTime + ':00'); // Add seconds to make it valid
-        
+        // Add seconds to make it valid for parsing in all browsers
+        travelDate = new Date(selectedDateTime + ':00');
         if (isNaN(travelDate.getTime())) {
           toast.error("Invalid date/time selected");
           setIsLoading(false);
@@ -147,29 +149,47 @@ const RouteMode = () => {
         is_current_time: !selectedDateTime,
       });
 
-      // Calculate seat recommendation with specific time
-      const recommendation = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing, travelDate);
+      // Use route-aware shade calculation (OSRM + sun sampling)
+      let recommendedSide: 'left' | 'right' | 'any' = 'any';
+      let reason: string = '';
+      let sunPosition: string = '';
+      let isNighttimeResult: boolean = false;
 
-      // Handle the recommendation based on your sunCalculator interface
-      let recommendedSide: 'left' | 'right' | 'any';
-      let reason: string;
-      let sunPosition: string;
-      let isNighttimeResult: boolean;
+      try {
+        const shadeResult = await getShadeSideForRoute(
+          { lat: originCoords.lat, lon: originCoords.lon },
+          { lat: destCoords.lat, lon: destCoords.lon },
+          travelDate
+        );
 
-      if (recommendation.isNight) {
-        // Nighttime scenario
-        recommendedSide = 'any';
-        reason = recommendation.message || "It's nighttime - sun position doesn't matter. You can choose any seat comfortably.";
-        sunPosition = "Nighttime - Sun below horizon";
-        isNighttimeResult = true;
-        toast.success("Nighttime travel detected - any seat is comfortable!");
-      } else {
-        // Daytime scenario
-        const sideStr = recommendation.recommendedSide.toLowerCase();
-        recommendedSide = sideStr as 'left' | 'right';
-        reason = recommendation.message || `Based on your travel direction of ${bearing.toFixed(1)}° (${degreesToCardinal(bearing)}) at ${travelDate.toLocaleTimeString()}`;
-        sunPosition = `Sun is on the ${recommendation.sunPosition.toLowerCase()} side (${recommendation.sunAzimuth.toFixed(1)}°)`;
+        if (shadeResult.shadeSide === 'ANY') {
+          recommendedSide = 'any';
+          reason = 'Both sides have similar shade across your route — choose any seat.';
+          toast.success("Both sides similar shade — choose any seat.");
+        } else {
+          recommendedSide = shadeResult.shadeSide.toLowerCase() as 'left' | 'right';
+          reason = `Based on your full route, the ${shadeResult.shadeSide.toLowerCase()} side receives more shade (less sun exposure).`;
+          toast.success(`More shade on the ${recommendedSide} side for your route.`);
+        }
+
+        sunPosition = `Aggregated across route: leftExposure=${Math.round(shadeResult.leftSunExposure)}, rightExposure=${Math.round(shadeResult.rightSunExposure)}`;
         isNighttimeResult = false;
+      } catch (routeErr) {
+        // Fallback: use single-point calculation at origin
+        console.warn('Route shade calc failed, falling back to single-point:', routeErr);
+        const rec = calculateSeatRecommendation(originCoords.lat, originCoords.lon, bearing, travelDate);
+
+        if (rec.isNight) {
+          recommendedSide = 'any';
+          reason = rec.message;
+          isNighttimeResult = true;
+          toast.success("Nighttime travel detected - any seat is comfortable!");
+        } else {
+          recommendedSide = rec.recommendedSide.toLowerCase() as 'left' | 'right';
+          reason = rec.message;
+          sunPosition = `Sun at origin: ${rec.sunAzimuth.toFixed(1)}° (${rec.sunPosition.toLowerCase()})`;
+          isNighttimeResult = false;
+        }
       }
 
       // Create consistent recommendation object
@@ -210,13 +230,13 @@ const RouteMode = () => {
           isNighttime: isNighttimeResult
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Route calculation error:', error);
       const endTime = performance.now();
       const calculationDuration = endTime - startTime;
-      
+
       trackEvent(AppEvents.ROUTE_CALCULATION_ERROR, {
-        error: error.message,
+        error: error?.message || String(error),
         calculation_duration_ms: Math.round(calculationDuration),
         origin,
         destination,
@@ -280,12 +300,12 @@ const RouteMode = () => {
           result_count: data.length,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Location search error:', error);
       trackEvent('location_search_error', {
         query,
         is_origin: isOrigin,
-        error: error.message,
+        error: error?.message || String(error),
       });
     } finally {
       setIsSearching(false);
@@ -294,7 +314,7 @@ const RouteMode = () => {
 
   const handleOriginChange = (value: string) => {
     setOrigin(value);
-    
+
     if (originTimeoutRef.current) {
       clearTimeout(originTimeoutRef.current);
     }
@@ -306,7 +326,7 @@ const RouteMode = () => {
 
   const handleDestChange = (value: string) => {
     setDestination(value);
-    
+
     if (destTimeoutRef.current) {
       clearTimeout(destTimeoutRef.current);
     }
@@ -320,7 +340,7 @@ const RouteMode = () => {
     setOrigin(suggestion.display_name);
     setShowOriginDropdown(false);
     setOriginSuggestions([]);
-    
+
     trackEvent('location_suggestion_selected', {
       type: 'origin',
       display_name: suggestion.display_name,
@@ -333,7 +353,7 @@ const RouteMode = () => {
     setDestination(suggestion.display_name);
     setShowDestDropdown(false);
     setDestSuggestions([]);
-    
+
     trackEvent('location_suggestion_selected', {
       type: 'destination',
       display_name: suggestion.display_name,
@@ -390,16 +410,16 @@ const RouteMode = () => {
     const day = String(now.getDate()).padStart(2, '0');
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    
+
     const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
     setSelectedDateTime(localDateTime);
-    
+
     trackEvent(AppEvents.CURRENT_TIME_USED, {
       hours,
       minutes,
       is_nighttime: now.getHours() >= 18 || now.getHours() < 6,
     });
-    
+
     // Show current time info
     const timeInfo = now.getHours() >= 18 || now.getHours() < 6 ? 'night' : 'day';
     toast.success(`Current ${timeInfo}time set (${hours}:${minutes})`);
@@ -435,7 +455,7 @@ const RouteMode = () => {
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-l from-cyan-100 dark:from-cyan-900/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-r from-blue-100 dark:from-blue-900/20 to-transparent rounded-full translate-y-12 -translate-x-12"></div>
-          
+
           <div className="relative z-10">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Origin Input */}
@@ -585,7 +605,7 @@ const RouteMode = () => {
 
                 {/* Helper text */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Select when you plan to travel for accurate sun position calculations. 
+                  Select when you plan to travel for accurate sun position calculations.
                   For nighttime travel, any seat is comfortable as the sun won't be a factor.
                 </p>
               </div>
@@ -602,7 +622,7 @@ const RouteMode = () => {
                 <div className={`absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500 ${
                   isHovered ? 'scale-105 brightness-110' : 'scale-100'
                 } ${isLoading || !origin || !destination ? 'opacity-50' : ''}`}></div>
-                
+
                 {isLoading ? (
                   <div className="relative z-10 flex items-center justify-center">
                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
@@ -642,7 +662,7 @@ const RouteMode = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Provide starting point and destination</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-2xl border border-purple-100 dark:border-purple-800 transition-all hover:bg-purple-100 dark:hover:bg-purple-900/30 group">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-400 font-bold text-lg group-hover:scale-110 transition-transform">
                   2
@@ -652,7 +672,7 @@ const RouteMode = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Choose when you'll be traveling</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-100 dark:border-green-800 transition-all hover:bg-green-100 dark:hover:bg-green-900/30 group">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-400 font-bold text-lg group-hover:scale-110 transition-transform">
                   3
@@ -664,7 +684,7 @@ const RouteMode = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-100 dark:border-amber-800 transition-all hover:bg-amber-100 dark:hover:bg-amber-900/30 group">
                 <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 font-bold text-lg group-hover:scale-110 transition-transform">
                   4
