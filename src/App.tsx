@@ -58,7 +58,7 @@ const AppContent = () => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'NEW_VERSION_AVAILABLE') {
-        console.log('New version available:', event.data.commit);
+        // console.log('New version available:', event.data.commit);
         Analytics.trackEvent('new_version_available', {
           commit: event.data.commit,
           timestamp: new Date().toISOString(),

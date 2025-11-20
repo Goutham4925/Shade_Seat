@@ -151,7 +151,7 @@ async function checkCommitVersion() {
       });
       return true; // New version detected
     }
-    console.log('[SW] Commit matches:', CURRENT_COMMIT);
+    // console.log('[SW] Commit matches:', CURRENT_COMMIT);
     return false; // Same version
   } catch (error) {
     // console.log('[SW] Build info check failed, using cached version');

@@ -18,7 +18,7 @@ export const useGoogleAnalytics = () => {
     location = useLocation();
   } catch {
     // Not inside a Router - nothing to do
-    console.warn('useGoogleAnalytics: Not inside Router context, skipping page tracking');
+    // console.warn('useGoogleAnalytics: Not inside Router context, skipping page tracking');
     return;
   }
 

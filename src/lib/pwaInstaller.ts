@@ -5,20 +5,20 @@ export function registerServiceWorker(): void {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('SW registered:', registration);
+          // console.log('SW registered:', registration);
 
           // === ALWAYS CHECK FOR UPDATES ON LOAD ===
           navigator.serviceWorker.ready.then(() => {
             if (registration.active) {
               // Check for updates immediately on every page load
               registration.active.postMessage({ type: 'CHECK_FOR_UPDATE' });
-              console.log('[SW] Triggered update check on page load');
+              // console.log('[SW] Triggered update check on page load');
             }
           });
 
         })
         .catch((error) => {
-          console.log('SW registration failed:', error);
+          // console.log('SW registration failed:', error);
         });
     });
   }
