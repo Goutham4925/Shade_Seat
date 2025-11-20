@@ -38,19 +38,15 @@ export default defineConfig({
     },
     // 👈 SITEMAP PLUGIN CONFIGURATION ADDED HERE
     sitemap({
-      hostname: 'https://shadeseat.com', // **Change this if your final domain is different**
-      dynamicRoutes: [
-        '/',
-        '/route',    // Your Route Mode page
-        '/settings', // Your Settings page
-        // Add any other static routes here
-      ],
-      // Optional: Add a custom priority to the homepage
-      priorityMap: [
-        '/', { priority: 1.0 }
-      ]
+        hostname: 'https://shadeseat.com',
+        dynamicRoutes: [
+            // '/' is intentionally excluded to avoid duplication
+            '/route',    
+            '/settings', 
+        ],
+        // FIX: Removed 'priorityMap' and replaced with 'priority'
+        priority: 1.0 // This sets the priority for ALL routes, including '/' (the homepage)
     })
-    // 👆 END SITEMAP CONFIG
   ],
   resolve: {
     alias: {
