@@ -356,7 +356,7 @@ const Settings = () => {
               <div>
                 <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-1">About SunSafe</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Version 1.0.0 • Built with ❤️ for commuters
+                  Version 1.0.0 • Built with for commuters
                 </p>
               </div>
             </div>
@@ -397,7 +397,7 @@ const Settings = () => {
         </Card>
 
         {/* Enhanced Action Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-4 animate-fade-in-up">
+        <div className="grid grid-cols-1 gap-3 mb-4 animate-fade-in-up">
           <Button 
             variant="outline" 
             className="rounded-2xl h-12 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800 transition-all group"
@@ -409,7 +409,7 @@ const Settings = () => {
             </div>
           </Button>
           
-          <Button 
+          {/* <Button 
             variant="outline"
             className="rounded-2xl h-12 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800 transition-all group"
             onClick={handleExportSettings}
@@ -418,12 +418,12 @@ const Settings = () => {
               <Download className="w-4 h-4" />
               <span>Export</span>
             </div>
-          </Button>
+          </Button> */}
         </div>
 
         <div className="grid grid-cols-1 gap-3 mb-6 animate-fade-in-up">
           <label htmlFor="import-settings" className="w-full">
-            <Button 
+            {/* <Button 
               variant="outline"
               className="rounded-2xl h-12 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-800 transition-all group w-full cursor-pointer"
               asChild
@@ -432,7 +432,7 @@ const Settings = () => {
                 <Upload className="w-4 h-4" />
                 <span>Import Settings</span>
               </div>
-            </Button>
+            </Button> */}
           </label>
           <input
             id="import-settings"
@@ -457,7 +457,7 @@ const Settings = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 px-0 h-6 text-xs"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-black  px-2 h-6 text-xs"
                 onClick={getCurrentLocationSettings}
               >
                 Check Location Permissions

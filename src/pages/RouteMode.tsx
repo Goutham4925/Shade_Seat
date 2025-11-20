@@ -602,12 +602,6 @@ const RouteMode = () => {
                     Now
                   </Button>
                 </div>
-
-                {/* Helper text */}
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Select when you plan to travel for accurate sun position calculations.
-                  For nighttime travel, any seat is comfortable as the sun won't be a factor.
-                </p>
               </div>
 
               {/* Enhanced Submit Button */}
@@ -685,35 +679,11 @@ const RouteMode = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-100 dark:border-amber-800 transition-all hover:bg-amber-100 dark:hover:bg-amber-900/30 group">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 font-bold text-lg group-hover:scale-110 transition-transform">
-                  4
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Personalized Recommendation</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Daytime: optimal seat to avoid sun • Nighttime: any seat is fine
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </Card>
 
-        {/* Enhanced Note Section */}
-        <div className="text-center animate-fade-in-up">
-          <div className="inline-flex items-start gap-4 px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl shadow-lg border border-amber-200 dark:border-amber-800 max-w-sm">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-800 text-amber-600 dark:text-amber-400 flex-shrink-0">
-              <Moon className="w-6 h-6" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">Night Travel</p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                When traveling at night, the sun won't be a factor. You can comfortably choose any seat without worrying about sunlight.
-              </p>
-            </div>
-          </div>
-        </div>
+
 
         {/* Enhanced Status Footer */}
         <div className="mt-8 text-center animate-fade-in-up">
