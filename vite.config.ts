@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { readFileSync } from "fs";
+import { sitemap } from "vite-plugin-sitemap"; 
 
 // Function to get commit hash from build-info.json
 const getCommitHash = () => {
@@ -18,7 +19,7 @@ const getCommitHash = () => {
 const commitHash = getCommitHash();
 
 export default defineConfig({
-  base: "/",  
+  base: "/", 
   server: {
     host: "::",
     port: 8080,
@@ -34,7 +35,22 @@ export default defineConfig({
         }
         return code;
       }
-    }
+    },
+    // 👈 SITEMAP PLUGIN CONFIGURATION ADDED HERE
+    sitemap({
+      hostname: 'https://shadeseat.com', // **Change this if your final domain is different**
+      dynamicRoutes: [
+        '/',
+        '/route',    // Your Route Mode page
+        '/settings', // Your Settings page
+        // Add any other static routes here
+      ],
+      // Optional: Add a custom priority to the homepage
+      priorityMap: [
+        '/', { priority: 1.0 }
+      ]
+    })
+    // 👆 END SITEMAP CONFIG
   ],
   resolve: {
     alias: {
