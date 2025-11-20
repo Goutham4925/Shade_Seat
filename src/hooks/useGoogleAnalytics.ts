@@ -1,43 +1,52 @@
+// src/hooks/useGoogleAnalytics.ts
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void;
     dataLayer: Record<string, any>[];
   }
 }
 
+/**
+ * useGoogleAnalytics
+ * Pushes SPA route changes as page_view events into dataLayer for GTM to pick up.
+ */
 export const useGoogleAnalytics = () => {
-  // Use useLocation only if we're inside a Router context
   let location;
   try {
-    // This will throw an error if we're not inside a Router
     location = useLocation();
-  } catch (error) {
-    // If we're not in a Router context, return early
+  } catch {
+    // Not inside a Router - nothing to do
     console.warn('useGoogleAnalytics: Not inside Router context, skipping page tracking');
     return;
   }
 
   useEffect(() => {
-    // Track page views
-    if (typeof window.gtag === 'function' && location) {
-      window.gtag('config', 'G-3G3K2CGYJ2', {
+    if (!location) return;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'page_view',
+      event_parameters: {
         page_title: document.title,
         page_location: window.location.href,
         page_path: location.pathname,
-      });
-    }
+      },
+    });
   }, [location]);
 };
 
-// Custom event tracking hook - this doesn't need router context
+/**
+ * useEventTracker
+ * Returns a trackEvent function that pushes custom events to dataLayer.
+ */
 export const useEventTracker = () => {
   const trackEvent = (eventName: string, parameters?: Record<string, any>) => {
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', eventName, parameters);
-    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: eventName,
+      event_parameters: parameters || {},
+    });
   };
 
   return trackEvent;
