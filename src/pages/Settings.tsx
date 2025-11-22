@@ -354,7 +354,7 @@ const Settings = () => {
                 <Info className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-1">About SunSafe</h3>
+                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-1">About Shade Safe</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Version 1.0.0 • Built with for commuters
                 </p>
@@ -363,7 +363,7 @@ const Settings = () => {
             
             <div className="space-y-4">
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                SunSafe helps commuters find the optimal seat to avoid direct sunlight using real-time sun position calculations and smart direction detection.
+                SShade Safe helps commuters find the optimal seat to avoid direct sunlight using real-time sun position calculations and smart direction detection.
               </p>
               
               <div className="grid grid-cols-2 gap-3">
