@@ -363,7 +363,7 @@ const Settings = () => {
             
             <div className="space-y-4">
               <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                SShade Safe helps commuters find the optimal seat to avoid direct sunlight using real-time sun position calculations and smart direction detection.
+                Shade Safe helps commuters find the optimal seat to avoid direct sunlight using real-time sun position calculations and smart direction detection.
               </p>
               
               <div className="grid grid-cols-2 gap-3">
